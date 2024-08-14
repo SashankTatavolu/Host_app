@@ -94560,7 +94560,7 @@ case 3:j=b
 if(j==null){s=1
 break}l=t.N
 s=4
-return A.C(A.fk(A.cd("https://10.2.8.12:5000/api/chapters/by_chapter/"+p.a.c+"/sentences_segments",0,null),A.aj(["Authorization","Bearer "+j],l,l)),$async$vh)
+return A.C(A.fk(A.cd(u.Z+p.a.c+"/sentences_segments",0,null),A.aj(["Authorization","Bearer "+j],l,l)),$async$vh)
 case 4:o=b
 if(o.b===200)try{l=o
 n=B.a2.bB(0,A.dY(A.dX(l.e).c.a.h(0,"charset")).bB(0,l.w))
