@@ -8,7 +8,8 @@ class LcPage extends StatelessWidget {
   // Function to open the .doc file
 
   Future<void> _openDocFile() async {
-    final Uri url = Uri.parse('https://example.com/your-document.doc');
+    final Uri url = Uri.parse(
+        'https://docs.google.com/document/d/1Z_ljepGE23lUAGq0LslW6imIDj6rIfABCMP5719Poyk/edit?exids=71471476,71471470&pli=1');
     try {
       await launchUrl(url);
     } catch (e) {
