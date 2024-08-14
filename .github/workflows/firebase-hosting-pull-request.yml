@@ -22,7 +22,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v3
         with:
-          flutter-version: 'latest'  # Specify the version if needed
+          flutter-version: 'latest'  # You can specify a specific version if needed
 
       - name: Install dependencies
         run: flutter pub get
