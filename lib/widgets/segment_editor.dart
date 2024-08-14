@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 
 import '../models/segment.dart';
@@ -7,10 +9,10 @@ class SegmentEditor extends StatefulWidget {
   final Function(List<SubSegment>) onSubSegmentChanged;
 
   const SegmentEditor({
-    Key? key,
+    super.key,
     required this.segment,
     required this.onSubSegmentChanged,
-  }) : super(key: key);
+  });
 
   @override
   _SegmentEditorState createState() => _SegmentEditorState();
@@ -32,12 +34,16 @@ class _SegmentEditorState extends State<SegmentEditor> {
                     onPressed: () => Navigator.pop(context, 'Title'),
                     child: const Text('Title'),
                   ),
-                  SizedBox(height: 20,),
+                  const SizedBox(
+                    height: 20,
+                  ),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context, 'Header'),
                     child: const Text('Header'),
                   ),
-                  SizedBox(height: 20,),
+                  const SizedBox(
+                    height: 20,
+                  ),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context, 'Normal'),
                     child: const Text('Normal'),
@@ -53,7 +59,10 @@ class _SegmentEditorState extends State<SegmentEditor> {
           SubSegment newSubSegment = SubSegment(
               text: "New $selectedType Sub-segment",
               subIndex: newSubIndex,
-              indexType: selectedType);
+              indexType: selectedType,
+              segmentId: int.parse('segmentId'),
+              columnCount: 0,
+              dependencyRelations: []);
           if (selectedType == 'Title' || selectedType == 'Header') {
             widget.segment.subSegments
                 .insert(0, newSubSegment); // Insert at top for Title and Header
@@ -74,7 +83,7 @@ class _SegmentEditorState extends State<SegmentEditor> {
     } else {
       // Calculate next alphabet character for sub-segment
       int lastIndex = 0;
-      widget.segment.subSegments.forEach((subSegment) {
+      for (var subSegment in widget.segment.subSegments) {
         if (subSegment.indexType == 'Normal') {
           int charCode =
               subSegment.subIndex.codeUnitAt(subSegment.subIndex.length - 1);
@@ -82,7 +91,7 @@ class _SegmentEditorState extends State<SegmentEditor> {
             lastIndex = charCode;
           }
         }
-      });
+      }
       return "${widget.segment.mainSegment}${String.fromCharCode(lastIndex + 1)}";
     }
   }
@@ -112,7 +121,7 @@ class _SegmentEditorState extends State<SegmentEditor> {
                 ),
                 subtitle: Text(widget.segment.subSegments[i].subIndex),
                 trailing: IconButton(
-                  icon: Icon(Icons.delete),
+                  icon: const Icon(Icons.delete),
                   onPressed: () {
                     setState(() {
                       widget.segment.subSegments.removeAt(i);

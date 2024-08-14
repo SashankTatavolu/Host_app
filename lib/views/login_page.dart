@@ -1,6 +1,10 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';  // Make sure this import points to your AuthService location
-import '../models/login_request.dart';  // Make sure this import points to your LoginRequest model location
+import 'package:lc_frontend/views/home_page.dart';
+import '../services/auth_service.dart';
+import '../models/login_request.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,6 +24,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  bool _isPasswordVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -70,13 +77,26 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildTextField(String label, bool obscure, TextEditingController controller) {
+  Widget _buildTextField(
+      String label, bool isPassword, TextEditingController controller) {
     return TextField(
       controller: controller,
-      obscureText: obscure,
+      obscureText: isPassword ? !_isPasswordVisible : false,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              )
+            : null,
       ),
     );
   }
@@ -88,7 +108,9 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text('Powered by', style: TextStyle(color: Colors.black, fontStyle: FontStyle.italic)),
+          const Text('Powered by',
+              style:
+                  TextStyle(color: Colors.black, fontStyle: FontStyle.italic)),
           const SizedBox(height: spaceHeight),
           Row(
             children: <Widget>[
@@ -102,18 +124,50 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Login Failed'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _loginPressed() async {
+    var username = _usernameController.text;
+    var password = _passwordController.text;
+
+    print('Username: $username'); // Print username
+    print('Password: $password'); // Print password
     var loginRequest = LoginRequest(
       username: _usernameController.text,
       password: _passwordController.text,
     );
     var response = await _authService.authenticateUser(loginRequest);
     if (response != null) {
-      // Navigate to next screen or display success message
-      print('Login Successful, token: ${response.accessToken}');
+      // Store username in secure storage
+      await _storage.write(key: 'username', value: _usernameController.text);
+
+      // Navigate to HomePage
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
     } else {
       // Show login error
       print('Login Failed');
+      _showErrorDialog('Incorrect username or password. Please try again.');
     }
   }
 }

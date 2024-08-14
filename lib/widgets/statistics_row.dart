@@ -6,11 +6,11 @@ class StatisticsRow extends StatelessWidget {
   final String pendingSegments;
 
   const StatisticsRow({
-    Key? key,
+    super.key,
     required this.chapters,
     required this.totalSegments,
     required this.pendingSegments,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

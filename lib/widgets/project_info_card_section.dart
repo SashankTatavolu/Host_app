@@ -5,10 +5,10 @@ class ProjectInfoCardSection extends StatelessWidget {
   final String timeAgo;
 
   const ProjectInfoCardSection({
-    Key? key,
+    super.key,
     required this.projectName,
     required this.timeAgo,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

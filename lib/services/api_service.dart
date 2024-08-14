@@ -29,7 +29,6 @@ class ApiService {
     if (method == 'POST') {
       response =
           await http.post(url, body: json.encode(payload), headers: headers);
-      print(response);
     } else if (method == 'GET') {
       response = await http.get(url, headers: headers);
     } else {
@@ -39,7 +38,6 @@ class ApiService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      print('Request failed with status: ${response.statusCode}.');
     }
     return null;
   }

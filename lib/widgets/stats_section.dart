@@ -9,12 +9,12 @@ class StatsSection extends StatelessWidget {
   final String pendingSegments;
 
   const StatsSection({
-    Key? key,
+    super.key,
     required this.language,
     required this.chapters,
     required this.totalSegments,
     required this.pendingSegments,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

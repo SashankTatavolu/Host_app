@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ChapterTableHeader extends StatelessWidget {
-  const ChapterTableHeader({Key? key}) : super(key: key);
+  const ChapterTableHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,24 +21,24 @@ class ChapterTableHeader extends StatelessWidget {
             child: Text('Chapter Name', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           Expanded(
+            flex: 1,
             child: Text('Created By', style: TextStyle(fontWeight: FontWeight.bold)),
-            flex: 1,
           ),
           Expanded(
+            flex: 1,
             child: Text('Created On', style: TextStyle(fontWeight: FontWeight.bold)),
-            flex: 1,
           ),
           Expanded(
+            flex: 1,
             child: Text('Assigned To', style: TextStyle(fontWeight: FontWeight.bold)),
-            flex: 1,
           ),
           Expanded(
-            child: Text('Segments', style: TextStyle(fontWeight: FontWeight.bold)),
             flex: 2,
+            child: Text('Segments', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           Expanded(
-            child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold)),
             flex: 1,
+            child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
