@@ -8,21 +8,20 @@ on:
 permissions:
   checks: write
   contents: read
-  pull_requests: write
+  pull-requests: write
 
 jobs:
   build_and_preview:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-latest  # Adjust if necessary based on runner OS compatibility
+    runs-on: ubuntu-latest  # Or your preferred runner OS
 
     steps:
       - uses: actions/checkout@v4
 
-      # **Optional for manual Flutter installation within the workflow:**
-      - name: Install Flutter (if not available on runner)
-        # Replace with the appropriate installation steps for your chosen method
-
-      # Update PATH environment variable if necessary (refer to installation method)
+      - name: Install Flutter
+        uses: google/setup-flutter@v2  # Or a similar action
+        with:
+          flutter-version: '3.22'  # Adjust if needed
 
       - run: flutter pub get
 
