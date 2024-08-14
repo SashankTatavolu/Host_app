@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "prod": "lcflutter-45d62",
+    "default": "lcflutter-45d62"
+  },
+  "targets": {},
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
+}

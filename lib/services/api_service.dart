@@ -37,8 +37,7 @@ class ApiService {
 
     if (response.statusCode == 200) {
       return json.decode(response.body);
-    } else {
-    }
+    } else {}
     return null;
   }
 }
