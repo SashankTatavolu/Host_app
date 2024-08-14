@@ -8,26 +8,21 @@ on:
 permissions:
   checks: write
   contents: read
-  pull-requests: write
+  pull_requests: write
 
 jobs:
   build_and_preview:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Adjust if necessary based on runner OS compatibility
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
+      # **Optional for manual Flutter installation within the workflow:**
+      - name: Install Flutter (if not available on runner)
+        # Replace with the appropriate installation steps for your chosen method
 
-      - uses: subosito/flutter-action@v3
-        with:
-          flutter-version: latest
+      # Update PATH environment variable if necessary (refer to installation method)
 
       - run: flutter pub get
 
