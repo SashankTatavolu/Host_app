@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -97,7 +99,7 @@ class _ChapterTabState extends State<ChapterTab> {
   Future<String> fetchChapterContent(int chapterId) async {
     print('Fetching chapter content for chapter ID: $chapterId');
     String baseUrl =
-        'http://10.2.8.12:5000/api/chapters/by_chapter/$chapterId/text';
+        'http://localhost:5000/api/chapters/by_chapter/$chapterId/text';
     final String? jwtToken = await getJwtToken();
 
     if (jwtToken == null) {

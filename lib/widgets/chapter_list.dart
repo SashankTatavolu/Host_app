@@ -37,6 +37,8 @@
 //   }
 // }
 
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:lc_frontend/views/chapter_page.dart';
 

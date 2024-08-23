@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 class Chapter {
   final int chapterId;
   final String chapterName;

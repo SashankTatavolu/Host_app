@@ -55,7 +55,7 @@ class SubSegment {
     required this.text,
     required this.subIndex,
     required this.indexType,
-    required this.segmentId, // Added segmentId parameter
+    this.segmentId = 0, // Added segmentId parameter
     this.columnCount = 0,
     this.conceptDefinitions = const [],
     // List<ConceptDefinition>? conceptDefinitions,
@@ -316,8 +316,5 @@ class Measure extends Construction {
   String measureType; // Type of measurement
   String measureUnit; // Unit of measurement
 
-  Measure(String measureType, String measureUnit)
-      : measureType = measureType,
-        measureUnit = measureUnit,
-        super('Measure');
+  Measure(this.measureType, this.measureUnit) : super('Measure');
 }

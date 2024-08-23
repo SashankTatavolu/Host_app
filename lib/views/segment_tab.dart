@@ -1,3 +1,5 @@
+// // ignore_for_file: avoid_print
+
 // import 'dart:convert';
 // import 'package:flutter/material.dart';
 // import '../models/segment.dart';
@@ -5,11 +7,12 @@
 
 // import '../services/auth_service.dart';
 // import '../widgets/segment_editor.dart';
+// import 'package:pdfrx/pdfrx.dart';
 
 // class SegmentTab extends StatefulWidget {
 //   final int chapterId;
 
-//   const SegmentTab({Key? key, required this.chapterId}) : super(key: key);
+//   const SegmentTab({super.key, required this.chapterId});
 
 //   @override
 //   _SegmentTabState createState() => _SegmentTabState();
@@ -33,35 +36,62 @@
 
 //     final response = await http.get(
 //       Uri.parse(
-//           'http://10.2.8.12:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments'),
+//           'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments'),
 //       headers: {'Authorization': 'Bearer $token'},
 //     );
 
 //     if (response.statusCode == 200) {
-//       final List<dynamic> data = json.decode(response.body);
-//       setState(() {
-//         segments = data.map((segment) {
-//           int mainSegment = int.parse(segment['sentence_id'].split('_').last);
-//           return Segment(
-//             mainSegment: mainSegment,
-//             text: segment['text'],
-//             subSegments: segment['segments'].map<SubSegment>((subSegment) {
-//               return SubSegment(
-//                 text: subSegment['segment_text'],
-//                 subIndex: subSegment['segment_index'],
-//                 indexType: subSegment['index_type'],
+//       try {
+//         final List<dynamic> data = json.decode(response.body);
+//         if (mounted) {
+//           setState(() {
+//             segments = data.map<Segment>((segment) {
+//               String sentenceId = segment['sentence_id'];
+//               String mainSegment = _extractMainSegment(sentenceId);
+//               return Segment(
+//                 mainSegment: mainSegment,
+//                 text: segment['text'],
+//                 subSegments:
+//                     (segment['segments'] as List).map<SubSegment>((subSegment) {
+//                   return SubSegment(
+//                     text:
+//                         subSegment['segment_text'] ?? '', // Handle null values
+//                     subIndex: subSegment['segment_index'] ?? 0,
+//                     indexType: subSegment['index_type'] ?? '',
+//                     segmentId: int.parse(subSegment['segment_id'].toString()),
+//                     columnCount: ['lexico_conceptual'].length,
+//                     dependencyRelations: [], // Convert correctly
+//                   );
+//                 }).toList(),
 //               );
-//             }).toList(),
-//           );
-//         }).toList();
-//         isLoading = false;
-//       });
+//             }).toList();
+//             isLoading = false;
+//           });
+//         }
+//       } catch (e) {
+//         print('Error parsing JSON data: $e');
+//         if (mounted) {
+//           setState(() {
+//             isLoading = false;
+//           });
+//         }
+//       }
 //     } else {
-//       // Handle error
-//       setState(() {
-//         isLoading = false;
-//       });
+//       if (mounted) {
+//         setState(() {
+//           isLoading = false;
+//         });
+//       }
 //     }
+//   }
+
+//   String _extractMainSegment(String sentenceId) {
+//     final regex = RegExp(r'0+([0-9]+[a-zA-Z]*)');
+//     final match = regex.firstMatch(sentenceId);
+//     if (match != null) {
+//       return match.group(1) ?? sentenceId;
+//     }
+//     return sentenceId;
 //   }
 
 //   Future<String?> getJwtToken() async {
@@ -103,6 +133,37 @@
 //     }
 //   }
 
+//   void _showPdf(BuildContext context) {
+//     showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return AlertDialog(
+//           title: const Text("PDF Content"),
+//           content: SizedBox(
+//             width: 1000,
+//             height: 600,
+//             child: SingleChildScrollView(
+//               child: SizedBox(
+//                 width: 1000,
+//                 height: 600,
+//                 child: PdfViewer.asset(
+//                     'assets/files/USR_Sentence_Segmentation.pdf'),
+//               ),
+//             ),
+//           ),
+//           actions: <Widget>[
+//             TextButton(
+//               child: const Text("Close"),
+//               onPressed: () {
+//                 Navigator.of(context).pop();
+//               },
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+
 //   @override
 //   Widget build(BuildContext context) {
 //     if (isLoading) {
@@ -112,6 +173,13 @@
 //     List<Segment> visibleSegments = getVisibleSegments();
 //     return Column(
 //       children: [
+//         Padding(
+//           padding: const EdgeInsets.all(8.0),
+//           child: ElevatedButton(
+//             onPressed: () => _showPdf(context),
+//             child: const Text('Show PDF'),
+//           ),
+//         ),
 //         Expanded(
 //           child: ListView.builder(
 //             itemCount: visibleSegments.length,
@@ -148,110 +216,28 @@
 //   }
 // }
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../models/segment.dart';
-import 'package:http/http.dart' as http;
 
-import '../services/auth_service.dart';
+import '../models/segment.dart';
 import '../widgets/segment_editor.dart';
 
 class SegmentTab extends StatefulWidget {
-  final int chapterId;
+  final List<Segment> segments;
 
-  const SegmentTab({super.key, required this.chapterId});
+  const SegmentTab({super.key, required this.segments});
 
   @override
-  _SegmentTabState createState() => _SegmentTabState();
+  _SegmentTabState createState() => _SegmentTabState(segments);
 }
 
 class _SegmentTabState extends State<SegmentTab> {
-  static const int itemsPerPage = 3;
+  static const int itemsPerPage =
+      3; // Define how many segments to display per page
   int currentPage = 0;
-  List<Segment> segments = [];
-  bool isLoading = true;
 
-  @override
-  void initState() {
-    super.initState();
-    fetchSegments();
-  }
+  List<Segment> segments;
 
-  Future<void> fetchSegments() async {
-    String? token = await getJwtToken();
-    if (token == null) return;
-
-    final response = await http.get(
-      Uri.parse(
-          'http://10.2.8.12:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-
-    if (response.statusCode == 200) {
-      try {
-        final List<dynamic> data = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            segments = data.map<Segment>((segment) {
-              String sentenceId = segment['sentence_id'];
-              String mainSegment = _extractMainSegment(sentenceId);
-              return Segment(
-                mainSegment: mainSegment,
-                text: segment['text'],
-                subSegments:
-                    (segment['segments'] as List).map<SubSegment>((subSegment) {
-                  return SubSegment(
-                    text:
-                        subSegment['segment_text'] ?? '', // Handle null values
-                    subIndex: subSegment['segment_index'] ?? 0,
-                    indexType: subSegment['index_type'] ?? '',
-                    segmentId: int.parse(subSegment['segment_id'].toString()),
-                    columnCount: ['lexico_conceptual'].length,
-                    dependencyRelations: [], // Convert correctly
-                  );
-                }).toList(),
-              );
-            }).toList();
-            isLoading = false;
-          });
-        }
-      } catch (e) {
-        print('Error parsing JSON data: $e');
-        if (mounted) {
-          setState(() {
-            isLoading = false;
-          });
-        }
-      }
-    } else {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
-  }
-
-  String _extractMainSegment(String sentenceId) {
-    final regex = RegExp(r'0+([0-9]+[a-zA-Z]*)');
-    final match = regex.firstMatch(sentenceId);
-    if (match != null) {
-      return match.group(1) ?? sentenceId;
-    }
-    return sentenceId;
-  }
-
-  Future<String?> getJwtToken() async {
-    try {
-      // Assuming you have an AuthService that provides the JWT token
-      final authService = AuthService();
-      final token = await authService.getToken();
-      return token;
-    } catch (e) {
-      print('Error fetching JWT token: $e');
-      return null;
-    }
-  }
+  _SegmentTabState(this.segments);
 
   int get totalPages => (segments.length / itemsPerPage).ceil();
 
@@ -282,10 +268,6 @@ class _SegmentTabState extends State<SegmentTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     List<Segment> visibleSegments = getVisibleSegments();
     return Column(
       children: [

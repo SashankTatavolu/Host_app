@@ -1,2 +1,2 @@
-ssh tto_lc@10.2.8.12
+ssh tto_lc@localhost
 nty_11

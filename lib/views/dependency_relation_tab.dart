@@ -1,11 +1,13 @@
 // import 'dart:io';
 
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/segment.dart'; // Adjust the import according to your file structure
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-
+import 'package:pdfrx/pdfrx.dart';
 import 'concept_definition_tab.dart'; // Assuming this is where getJwtToken is defined
 
 class DependencyRelationPage extends StatefulWidget {
@@ -38,7 +40,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'http://10.2.8.12:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -84,7 +86,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'http://10.2.8.12:5000/api/lexicals/segment/$segmentId/is_concept_generated');
+          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -118,7 +120,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'http://10.2.8.12:5000/api/segment_details/segment_details/$segmentId');
+          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -195,7 +197,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
 
       final response = await http.post(
         Uri.parse(
-            'http://10.2.8.12:5000/api/relations/segment/${subSegment.segmentId}/relational'),
+            'http://localhost:5000/api/relations/segment/${subSegment.segmentId}/relational'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -381,6 +383,30 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
     }
   }
 
+  void _showPdf(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("PDF Content"),
+          content: SizedBox(
+            width: 1000,
+            height: 600,
+            child: PdfViewer.asset('assets/files/USR_dependency_relation.pdf'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Close"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget buildDependencyRelationTable(SubSegment subSegment) {
     if (segmentDetails == null) {
       return const Center(
@@ -392,6 +418,12 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       scrollDirection: Axis.horizontal,
       child: Column(
         children: [
+          ElevatedButton(
+            onPressed: () {
+              _showPdf(context);
+            },
+            child: const Text('Show More Info'),
+          ),
           DataTable(
             columns: _buildHeaderRow(subSegment, columnCount),
             rows: _buildDataRows(subSegment, columnCount) +
@@ -416,6 +448,10 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
                         return DataCell(Text(componentType));
                       }),
                     ],
+                  ),
+                  DataRow(
+                    cells: List.generate(
+                        columnCount + 1, (index) => const DataCell(Text(' '))),
                   ),
                   buildMainStatusRow(subSegment),
                   buildTargetIndexRow(subSegment),
@@ -495,7 +531,8 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
                     'N/A'), // Display fetched main index
                 Expanded(
                   child: DropdownButton<int>(
-                    value: relation?.targetIndex ?? 0, // No initial value
+                    value: relation
+                        ?.targetIndex, // Set the dropdown value to current targetIndex
                     items: List.generate(
                       columnCount,
                       (index) => DropdownMenuItem<int>(
@@ -506,8 +543,8 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
                     onChanged: (newValue) {
                       setState(() {
                         if (relation != null) {
-                          relation.targetIndex = newValue!;
-                          // Trigger UI update here
+                          relation.targetIndex =
+                              newValue ?? -1; // Update targetIndex
                           print('Selected value: $newValue');
                         }
                       });
@@ -621,18 +658,45 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
   DataRow buildMainStatusRow(SubSegment subSegment) {
     return DataRow(
       cells: [
-        const DataCell(Text('Is Main')),
+        const DataCell(Text('is Main')),
         ...List.generate(columnCount, (index) {
+          final relation = subSegment.dependencyRelations.length > index
+              ? subSegment.dependencyRelations[index]
+              : null; // Handle null case
+
+          final isMain = relation != null &&
+              relation.targetIndex == 0 &&
+              relation.relation == 'main';
+
           return DataCell(
             Checkbox(
-              value: subSegment.dependencyRelations.length > index
-                  ? subSegment.dependencyRelations[index].isMain
-                  : false,
-              onChanged: (bool? value) {
-                setState(() {
-                  setMainRelation(subSegment, index, value ?? false);
-                });
-              },
+              value: isMain,
+              onChanged: (newValue) => setState(() {
+                if (relation != null) {
+                  relation.isMain = newValue!;
+                  if (newValue) {
+                    // Set current index as main
+                    relation.mainIndex = '0';
+                    relation.relation = 'main';
+
+                    // Clear other main relations
+                    for (int i = 0;
+                        i < subSegment.dependencyRelations.length;
+                        i++) {
+                      if (i != index &&
+                          subSegment.dependencyRelations[i].isMain) {
+                        subSegment.dependencyRelations[i].mainIndex = '';
+                        subSegment.dependencyRelations[i].relation = '';
+                        subSegment.dependencyRelations[i].isMain = false;
+                      }
+                    }
+                  } else {
+                    // Clear head index and relation type if not main
+                    relation.mainIndex = '';
+                    relation.relation = '';
+                  }
+                }
+              }),
             ),
           );
         }),
@@ -640,50 +704,25 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
     );
   }
 
-  // void setMainRelation(SubSegment subSegment, int mainIndex, bool isMain) {
-  //   print('Setting main relation: $mainIndex, $isMain');
-
-  //   for (int i = 0; i < subSegment.dependencyRelations.length; i++) {
-  //     if (i == mainIndex) {
-  //       subSegment.dependencyRelations[i].relation = isMain ? 'main' : '';
-  //       subSegment.dependencyRelations[i].mainIndex = '0';
-  //       subSegment.dependencyRelations[i].isMain = isMain;
-  //       print(
-  //           'Setting main relation at index $i: ${subSegment.dependencyRelations[i]}');
-  //     } else {
-  //       subSegment.dependencyRelations[i].isMain = false;
-  //       print(
-  //           'Setting non-main relation at index $i: ${subSegment.dependencyRelations[i]}');
-  //     }
-  //   }
-
-  //   setState(() {
-  //     print('Calling setState');
-  //   });
-  // }
-
   void setMainRelation(SubSegment subSegment, int mainIndex, bool isMain) {
-    if (isMain) {
-      for (int i = 0; i < subSegment.dependencyRelations.length; i++) {
-        if (i == mainIndex) {
-          // Set the selected relation as 'main'
-          subSegment.dependencyRelations[i].relation = 'main';
-          subSegment.dependencyRelations[i].mainIndex = '0';
-          subSegment.dependencyRelations[i].isMain =
-              true; // Lock the 'main' so it can't be edited
-        } else {
-          // Reset other relations to default values
-          subSegment.dependencyRelations[i].relation =
-              ''; // Assuming '1' is your default type
-          subSegment.dependencyRelations[i].mainIndex = '1';
-          subSegment.dependencyRelations[i].isMain = false; // Unlock others
-        }
+    print('Setting main relation: $mainIndex, $isMain');
+
+    for (int i = 0; i < subSegment.dependencyRelations.length; i++) {
+      if (i == mainIndex) {
+        subSegment.dependencyRelations[i].relation = isMain ? 'main' : '';
+        subSegment.dependencyRelations[i].mainIndex = '0';
+        subSegment.dependencyRelations[i].isMain = isMain;
+        print(
+            'Setting main relation at index $i: ${subSegment.dependencyRelations[i]}');
+      } else {
+        subSegment.dependencyRelations[i].isMain = false;
+        print(
+            'Setting non-main relation at index $i: ${subSegment.dependencyRelations[i]}');
       }
-    } else {
-      subSegment.dependencyRelations[mainIndex].relation = '';
-      subSegment.dependencyRelations[mainIndex].mainIndex = '1';
-      subSegment.dependencyRelations[mainIndex].isMain = false;
     }
-    setState(() {}); // Update the state to refresh the UI
+
+    setState(() {
+      print('Calling setState');
+    });
   }
 }

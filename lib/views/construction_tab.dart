@@ -1,8 +1,11 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lc_frontend/views/concept_definition_tab.dart';
 import '../models/segment.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:http/http.dart' as http;
 
 class ConstructionTab extends StatefulWidget {
@@ -35,7 +38,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'http://10.2.8.12:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -165,7 +168,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'http://10.2.8.12:5000/api/lexicals/segment/$segmentId/is_concept_generated');
+          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -203,7 +206,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'http://10.2.8.12:5000/api/segment_details/segment_details/$segmentId');
+          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -259,6 +262,30 @@ class _ConstructionTabState extends State<ConstructionTab> {
     }
   }
 
+  void _showPdf(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("PDF Content"),
+          content: SizedBox(
+            width: 1000,
+            height: 600,
+            child: PdfViewer.asset('assets/files/USR_GUIDELINES.pdf'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Close"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget buildConstructionTable(SubSegment subSegment) {
     TextEditingController constructionController =
         TextEditingController(text: selectedSubSegment?.construction);
@@ -271,6 +298,14 @@ class _ConstructionTabState extends State<ConstructionTab> {
     return SingleChildScrollView(
       child: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ElevatedButton(
+              onPressed: () => _showPdf(context),
+              child: const Text('Show PDF'),
+            ),
+          ),
+          const SizedBox(height: 20),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
@@ -282,7 +317,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
               ],
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 180),
           ElevatedButton(
             onPressed: () {
               setState(() {

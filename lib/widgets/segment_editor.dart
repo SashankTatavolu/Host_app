@@ -60,7 +60,7 @@ class _SegmentEditorState extends State<SegmentEditor> {
               text: "New $selectedType Sub-segment",
               subIndex: newSubIndex,
               indexType: selectedType,
-              segmentId: int.parse('segmentId'),
+              // segmentId: int.parse('segmentId'),
               columnCount: 0,
               dependencyRelations: []);
           if (selectedType == 'Title' || selectedType == 'Header') {

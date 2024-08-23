@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -45,7 +47,7 @@ class _ConceptTabState extends State<ConceptTab> {
       }
 
       final url = Uri.parse(
-          'http://10.2.8.12:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -87,6 +89,8 @@ class _ConceptTabState extends State<ConceptTab> {
       return;
     }
 
+    bool hasData = false;
+
     for (SubSegment subSegment in selectedSegment!.subSegments) {
       int? segmentId;
       try {
@@ -100,7 +104,7 @@ class _ConceptTabState extends State<ConceptTab> {
       }
 
       final conceptUrl =
-          Uri.parse('http://10.2.8.12:5000/api/lexicals/segment/$segmentId');
+          Uri.parse('http://localhost:5000/api/lexicals/segment/$segmentId');
       print('Fetching concepts from: $conceptUrl');
 
       try {
@@ -133,6 +137,9 @@ class _ConceptTabState extends State<ConceptTab> {
         // Display error message to the user
       }
     }
+    if (!hasData) {
+      _promptForColumnCount(selectedSubSegment!);
+    }
   }
 
   @override
@@ -141,7 +148,7 @@ class _ConceptTabState extends State<ConceptTab> {
       body: Row(
         children: [
           // Segment List Panel
-          Container(
+          SizedBox(
             width: segmentPanelWidth,
             child: buildSegmentList(),
           ),
@@ -408,7 +415,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
     }
 
     final url = Uri.parse(
-        'http://10.2.8.12:5000/api/concepts/getconcepts/$originalConceptName');
+        'http://localhost:5000/api/concepts/getconcepts/$originalConceptName');
     print('Fetching concept options from: $url');
 
     final response = await http.get(
@@ -448,12 +455,12 @@ class _ConceptEditorState extends State<ConceptEditor> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Select Concept'),
+          title: const Text('Select Concept'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (conceptOptions[columnIndex]?.isEmpty ?? true)
-                Text('No concepts found')
+                const Text('No concepts found')
               else
                 ...conceptOptions[columnIndex]!.map((option) {
                   return ListTile(
@@ -729,7 +736,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
     final subSegment = widget.subSegment;
     final segmentId = subSegment.segmentId;
     final url =
-        Uri.parse('http://10.2.8.12:5000/api/lexicals/segment/$segmentId');
+        Uri.parse('http://localhost:5000/api/lexicals/segment/$segmentId');
     final body = jsonEncode(widget.subSegment.conceptDefinitions.map((concept) {
       return {
         "segment_index": mainSegment, // Assuming you have this field

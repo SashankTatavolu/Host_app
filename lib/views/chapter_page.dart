@@ -616,7 +616,8 @@ class _ChapterPageState extends State<ChapterPage>
                 children: [
                   ChapterTab(chapterId: widget.chapterId),
                   SegmentTab(
-                    chapterId: widget.chapterId,
+                    // chapterId: widget.chapterId,
+                    segments: segments,
                   ),
                   ConceptTab(
                     segments: segments,
@@ -631,8 +632,7 @@ class _ChapterPageState extends State<ChapterPage>
                     // segments: segments,
                   ),
                   DiscourseTab(
-                    segments: segments,
-                    // chapterId: widget.chapterId.toString(),
+                    chapterId: widget.chapterId,
                   )
                 ],
               ),

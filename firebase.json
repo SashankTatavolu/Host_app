@@ -9,7 +9,7 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "destination": "http://10.2.8.12:5000/api/**"
+        "destination": "http://localhost:5000/api/**"
       }
     ]
   }
