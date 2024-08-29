@@ -710,6 +710,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
     List<Map<String, TextEditingController>> controllers = List.generate(
       subSegment.columnCount,
       (index) => {
+        'index': TextEditingController(),
         'concept': TextEditingController(),
         'semanticCategory': TextEditingController(),
         'morphologicalSemantics': TextEditingController(),
@@ -720,7 +721,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
         'Is Main': TextEditingController(),
         'Dep Rel': TextEditingController(),
         'Discourse Head Index': TextEditingController(),
-        'Discourse rel': TextEditingController(),
+        'Discourse Rel': TextEditingController(),
         'CO-ref': TextEditingController(),
       },
     );
@@ -859,7 +860,6 @@ class _ConceptEditorState extends State<ConceptEditor> {
                                 ),
                             ],
                           ),
-
                           DataRow(
                             cells: [
                               const DataCell(Text('Semantic Category:')),
@@ -1146,17 +1146,27 @@ class _ConceptEditorState extends State<ConceptEditor> {
 
     // Ensure that all controllers are initialized
     for (int i = 0; i < subSegment.columnCount; i++) {
-      if (controllers[i]['concept'] == null ||
-          controllers[i]['semanticCategory'] == null ||
-          controllers[i]['morphologicalSemantics'] == null ||
-          controllers[i]['speakersView'] == null ||
-          controllers[i]['CxN'] == null ||
-          controllers[i]['Component Type'] == null ||
-          controllers[i]['Head Index'] == null ||
-          controllers[i]['Relation Type'] == null ||
-          controllers[i]['Discourse'] == null) {
-        print('Controller values at index $i: ${controllers[i]}');
-        return;
+      final controllerNames = [
+        'index',
+        'concept',
+        'semanticCategory',
+        'morphologicalSemantics',
+        'speakersView',
+        'CxN head',
+        'Component Type',
+        'Is Main',
+        'Head Index',
+        'Dep Rel',
+        'Discourse Head Index',
+        'Discourse Rel',
+        'CO-ref'
+      ];
+
+      for (var name in controllerNames) {
+        if (controllers[i][name] == null) {
+          print('Controller for $name at column $i is missing');
+          return;
+        }
       }
     }
 
@@ -1165,7 +1175,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
 
     for (int i = 0; i < subSegment.columnCount; i++) {
       final conceptEntry = {
-        "segment_index": subSegment.segmentId, // Handle potential null value
+        "segment_index": subSegment.segmentId,
         "index": i + 1,
         "concept": controllers[i]['concept']!.text,
         "semantic_category": controllers[i]['semanticCategory']!.text,
@@ -1188,9 +1198,10 @@ class _ConceptEditorState extends State<ConceptEditor> {
             "segment_index": controllers[i]['Head Index']!.text,
             "index": i + 1,
             "head_index": controllers[i]['Discourse Head Index']!.text,
-            "relation": controllers[i]['Relation Type']!.text,
+            "relation":
+                controllers[i]['Dep Rel']!.text, // Check if the key is correct
             "discourse":
-                '${controllers[i]['Discourse Head Index']!.text}: ${controllers[i]['Discourse rel']!.text}', // Formatting value
+                '${controllers[i]['Discourse Head Index']!.text}: ${controllers[i]['Discourse Rel']!.text}', // Formatting value
           }
         ]
       };
@@ -1199,9 +1210,9 @@ class _ConceptEditorState extends State<ConceptEditor> {
 
     // Build the request body
     final Map<String, dynamic> requestBody = {
-      "segment_id": subSegment.segmentId, // Handle potential null value
-      "segment_text": subSegment.text, // Handle potential null value
-      "segment_type": subSegment.indexType, // Handle potential null value
+      "segment_id": subSegment.segmentId,
+      "segment_text": subSegment.text,
+      "segment_type": subSegment.indexType,
       "lexico_conceptual": lexicoConceptual,
     };
 
