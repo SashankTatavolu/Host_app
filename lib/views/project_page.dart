@@ -49,7 +49,7 @@ class _ProjectPageState extends State<ProjectPage> {
 
     final response = await http.get(
       Uri.parse(
-          'http://localhost:5000/api/chapters/by_project/${widget.projectId}'),
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_project/${widget.projectId}'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -84,7 +84,7 @@ class _ProjectPageState extends State<ProjectPage> {
 
     final response = await http.get(
       Uri.parse(
-          'http://localhost:5000/api/users/by_organization/$userOrganization'),
+          'https://canvas.iiit.ac.in/lc/api/users/by_organization/$userOrganization'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -138,7 +138,7 @@ class _ProjectPageState extends State<ProjectPage> {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/chapters/add'),
+        Uri.parse('https://canvas.iiit.ac.in/lc/api/chapters/add'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -186,7 +186,7 @@ class _ProjectPageState extends State<ProjectPage> {
       print('Username from JWT: $username'); // Print username from JWT
 
       final response = await http.get(
-        Uri.parse('http://localhost:5000/api/users/all'),
+        Uri.parse('https://canvas.iiit.ac.in/lc/api/users/all'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $jwtToken',
@@ -241,7 +241,8 @@ class _ProjectPageState extends State<ProjectPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/projects/$projectId/assign_users'),
+        Uri.parse(
+            'https://canvas.iiit.ac.in/lc/api/projects/$projectId/assign_users'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

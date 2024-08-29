@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lc_frontend/views/concept_definition_tab.dart';
 import '../models/segment.dart';
-import 'package:pdfrx/pdfrx.dart';
 import 'package:http/http.dart' as http;
+import 'package:pdfrx/pdfrx.dart';
 
 class ConstructionTab extends StatefulWidget {
   final String chapterId;
@@ -38,7 +38,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -168,7 +168,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
+          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -206,7 +206,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
+          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -317,7 +317,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
               ],
             ),
           ),
-          const SizedBox(height: 180),
+          const SizedBox(height: 30),
           ElevatedButton(
             onPressed: () {
               setState(() {
@@ -350,9 +350,16 @@ class _ConstructionTabState extends State<ConstructionTab> {
 
   List<DataColumn> _buildHeaderRow(SubSegment subSegment, int columnCount) {
     List<DataColumn> columns = [
-      const DataColumn(label: Text('Property')),
-      ...List.generate(columnCount,
-          (index) => DataColumn(label: Text('Index ${index + 1}'))),
+      const DataColumn(label: Text('Index')),
+      ...List.generate(columnCount, (index) {
+        if (index < subSegment.conceptDefinitions.length) {
+          var conceptDef = subSegment.conceptDefinitions[index];
+          return DataColumn(
+              label: Text(conceptDef.index.toString())); // Use index property
+        } else {
+          return const DataColumn(label: Text('N/A'));
+        }
+      }),
     ];
 
     return columns;

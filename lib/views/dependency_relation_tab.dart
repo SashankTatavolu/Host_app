@@ -40,7 +40,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -86,7 +86,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
+          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -120,7 +120,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
+          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -197,7 +197,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
 
       final response = await http.post(
         Uri.parse(
-            'http://localhost:5000/api/relations/segment/${subSegment.segmentId}/relational'),
+            'https://canvas.iiit.ac.in/lc/api/relations/segment/${subSegment.segmentId}/relational'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -425,6 +425,11 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
             child: const Text('Show More Info'),
           ),
           DataTable(
+            columnSpacing: 8.0, // Reduce spacing between columns
+            dataTextStyle: const TextStyle(fontSize: 14), // Smaller text size
+            headingTextStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold), // Smaller heading text size
             columns: _buildHeaderRow(subSegment, columnCount),
             rows: _buildDataRows(subSegment, columnCount) +
                 [
@@ -479,11 +484,20 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
   }
 
   List<DataColumn> _buildHeaderRow(SubSegment subSegment, int columnCount) {
-    return [
-      const DataColumn(label: Text('Property')),
-      ...List.generate(columnCount,
-          (index) => DataColumn(label: Text('Index ${index + 1}'))),
+    List<DataColumn> columns = [
+      const DataColumn(label: Text('Index')),
+      ...List.generate(columnCount, (index) {
+        if (index < subSegment.conceptDefinitions.length) {
+          var conceptDef = subSegment.conceptDefinitions[index];
+          return DataColumn(
+              label: Text(conceptDef.index.toString())); // Use index property
+        } else {
+          return const DataColumn(label: Text('N/A'));
+        }
+      }),
     ];
+
+    return columns;
   }
 
   List<DataRow> _buildDataRows(SubSegment subSegment, int columnCount) {
@@ -527,17 +541,19 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
           return DataCell(
             Row(
               children: [
-                Text(relation?.mainIndex.toString() ??
-                    'N/A'), // Display fetched main index
-                Expanded(
+                Text(relation?.mainIndex.toString() ?? 'N/A'),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 80, // Set the width of the dropdown
                   child: DropdownButton<int>(
-                    value: relation
-                        ?.targetIndex, // Set the dropdown value to current targetIndex
+                    value: relation?.targetIndex ?? 0,
                     items: List.generate(
                       columnCount,
                       (index) => DropdownMenuItem<int>(
                         value: index,
-                        child: Text((index + 1).toString()),
+                        child: Text((index + 1).toString(),
+                            style: const TextStyle(
+                                fontSize: 14)), // Adjust font size
                       ),
                     ),
                     onChanged: (newValue) {
@@ -549,6 +565,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
                         }
                       });
                     },
+                    iconSize: 16, // Adjust the icon size
                   ),
                 ),
               ],
@@ -573,9 +590,13 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
               children: [
                 Text(relation?.relation ??
                     'N/A'), // Display fetched relation type
-                Expanded(
+                const SizedBox(
+                    width: 8), // Add some spacing between text and dropdown
+                SizedBox(
+                  width: 80, // Adjust the width as needed
                   child: DropdownButton<String>(
                     value: null, // No initial value
+                    isExpanded: true, // Ensure it fills the container width
                     items: relation?.getRelationTypes().map((type) {
                       return DropdownMenuItem<String>(
                         value: type,
@@ -670,22 +691,20 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
 
           return DataCell(
             Checkbox(
-              value: isMain,
+              value: isMain, // Set initial value based on fetched data
               onChanged: (newValue) => setState(() {
                 if (relation != null) {
-                  relation.isMain = newValue!;
-                  if (newValue) {
+                  if (newValue!) {
                     // Set current index as main
                     relation.mainIndex = '0';
                     relation.relation = 'main';
 
-                    // Clear other main relations
+                    // Clear other main relations (including the previous one)
                     for (int i = 0;
                         i < subSegment.dependencyRelations.length;
                         i++) {
-                      if (i != index &&
-                          subSegment.dependencyRelations[i].isMain) {
-                        subSegment.dependencyRelations[i].mainIndex = '';
+                      if (i != index) {
+                        // subSegment.dependencyRelations[i].mainIndex = '';
                         subSegment.dependencyRelations[i].relation = '';
                         subSegment.dependencyRelations[i].isMain = false;
                       }
@@ -695,6 +714,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
                     relation.mainIndex = '';
                     relation.relation = '';
                   }
+                  relation.isMain = newValue; // Update isMain after checks
                 }
               }),
             ),
@@ -705,24 +725,27 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
   }
 
   void setMainRelation(SubSegment subSegment, int mainIndex, bool isMain) {
-    print('Setting main relation: $mainIndex, $isMain');
-
-    for (int i = 0; i < subSegment.dependencyRelations.length; i++) {
-      if (i == mainIndex) {
-        subSegment.dependencyRelations[i].relation = isMain ? 'main' : '';
-        subSegment.dependencyRelations[i].mainIndex = '0';
-        subSegment.dependencyRelations[i].isMain = isMain;
-        print(
-            'Setting main relation at index $i: ${subSegment.dependencyRelations[i]}');
-      } else {
-        subSegment.dependencyRelations[i].isMain = false;
-        print(
-            'Setting non-main relation at index $i: ${subSegment.dependencyRelations[i]}');
+    if (isMain) {
+      for (int i = 0; i < subSegment.dependencyRelations.length; i++) {
+        if (i == mainIndex) {
+          // Set the selected relation as 'main'
+          subSegment.dependencyRelations[i].relationType = 'main';
+          subSegment.dependencyRelations[i].targetIndex = 0;
+          subSegment.dependencyRelations[i].isMain =
+              true; // Lock the 'main' so it can't be edited
+        } else {
+          // Reset other relations to default values
+          subSegment.dependencyRelations[i].relationType =
+              ''; // Assuming '1' is your default type
+          subSegment.dependencyRelations[i].targetIndex = 1;
+          subSegment.dependencyRelations[i].isMain = false; // Unlock others
+        }
       }
+    } else {
+      subSegment.dependencyRelations[mainIndex].relationType = '';
+      subSegment.dependencyRelations[mainIndex].targetIndex = 1;
+      subSegment.dependencyRelations[mainIndex].isMain = false;
     }
-
-    setState(() {
-      print('Calling setState');
-    });
+    setState(() {}); // Update the state to refresh the UI
   }
 }

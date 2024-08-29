@@ -616,8 +616,7 @@ class _ChapterPageState extends State<ChapterPage>
                 children: [
                   ChapterTab(chapterId: widget.chapterId),
                   SegmentTab(
-                    // chapterId: widget.chapterId,
-                    segments: segments,
+                    chapterId: widget.chapterId,
                   ),
                   ConceptTab(
                     segments: segments,

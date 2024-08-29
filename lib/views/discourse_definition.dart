@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_print
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import '../models/segment.dart';
 import 'dart:convert';
@@ -21,6 +23,7 @@ class _DiscourseTabState extends State<DiscourseTab> {
   List<Segment> segments = [];
   int columnCount = 0;
   Map<String, dynamic>? segmentDetails;
+  String? selectedRelation;
 
   @override
   void initState() {
@@ -37,7 +40,7 @@ class _DiscourseTabState extends State<DiscourseTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -83,7 +86,7 @@ class _DiscourseTabState extends State<DiscourseTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
+          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -117,7 +120,7 @@ class _DiscourseTabState extends State<DiscourseTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
+          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -308,6 +311,36 @@ class _DiscourseTabState extends State<DiscourseTab> {
     );
   }
 
+  Widget buildLexicoConceptualRow(
+      SubSegment subSegment, int actualColumnCount) {
+    return DataTable(
+      columns: _buildHeaderRow(subSegment, actualColumnCount),
+      rows: _buildDataRows(subSegment, actualColumnCount),
+    );
+  }
+
+  final List<String> dropdownOptions = [
+    'samuccaya',
+    'AvaSyakawApariNAma',
+    'kAryakAraNa',
+    'pariNAma',
+    'vyABicAra',
+    'viroXi',
+    'anyawra',
+    'samuccaya.alAvA',
+    'samuccaya.samAveSI',
+    'vyaBicAra',
+    'samuccaya.BI',
+    'viroXaxyotaka',
+    'uXAharaNasvarUpa',
+    'saMSepa mEM',
+    'AvaSyakawApariNAma.nahIM',
+    'uwwarkAla',
+    'samuccaya.awirikwa',
+    'arWAwa',
+    'kAryaxyowaka',
+  ];
+
   Widget buildDiscourseTable(SubSegment subSegment) {
     if (segmentDetails == null) {
       _fetchSegmentDetails(subSegment.segmentId);
@@ -315,6 +348,9 @@ class _DiscourseTabState extends State<DiscourseTab> {
     }
 
     final constructionArray = segmentDetails!['discourse'] as List<dynamic>;
+
+    // Update columnCount to be the minimum of constructionArray length or the expected column count
+    final actualColumnCount = min(columnCount, constructionArray.length);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -327,13 +363,13 @@ class _DiscourseTabState extends State<DiscourseTab> {
             child: const Text('Show More Info'),
           ),
           DataTable(
-            columns: _buildHeaderRow(subSegment, columnCount),
-            rows: _buildDataRows(subSegment, columnCount) +
+            columns: _buildHeaderRow(subSegment, actualColumnCount),
+            rows: _buildDataRows(subSegment, actualColumnCount) +
                 [
                   DataRow(
                     cells: [
                       const DataCell(Text('Head Index')),
-                      ...List.generate(columnCount, (columnIndex) {
+                      ...List.generate(actualColumnCount, (columnIndex) {
                         final constructionItem = constructionArray[columnIndex];
                         final headIndex = constructionItem['head_index'];
                         return DataCell(Text(headIndex.toString()));
@@ -342,31 +378,75 @@ class _DiscourseTabState extends State<DiscourseTab> {
                   ),
                   DataRow(
                     cells: [
-                      const DataCell(Text('Relation')),
-                      ...List.generate(columnCount, (columnIndex) {
+                      const DataCell(Text('Discourse Relation')),
+                      ...List.generate(actualColumnCount, (columnIndex) {
                         final constructionItem = constructionArray[columnIndex];
                         final relationType = constructionItem['relation'];
-                        return DataCell(Text(relationType));
+                        // Check if relation is coref, replace with '-' if true
+                        return DataCell(
+                            Text(relationType == 'coref' ? '-' : relationType));
                       }),
                     ],
                   ),
                 ],
           ),
-          // Padding(
-          //   padding: const EdgeInsets.all(8.0),
-          //   child: ElevatedButton.icon(
-          //     icon: const Icon(Icons.done, color: Colors.white),
-          //     label: const Text('Finalize Dependency Relation',
-          //         style: TextStyle(color: Colors.white)),
-          //     onPressed: () => finalizeRelation(context, subSegment),
-          //     style: ElevatedButton.styleFrom(
-          //       backgroundColor: Colors.indigo,
-          //       fixedSize: const Size(400, 55),
-          //       shape: RoundedRectangleBorder(
-          //           borderRadius: BorderRadius.circular(12)),
-          //     ),
-          //   ),
-          // ),
+          const SizedBox(height: 16),
+          const Text(
+            'Select Connecting Segment:',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          DropdownButton<String>(
+            value: selectedSubSegment?.subIndex,
+            hint: const Text("Select a SubSegment"),
+            items: segments
+                .expand((segment) => segment.subSegments)
+                .map((subSegment) {
+              return DropdownMenuItem<String>(
+                value: subSegment.subIndex,
+                child: Text(subSegment.subIndex),
+              );
+            }).toList(),
+            onChanged: (String? newValue) async {
+              if (newValue != null) {
+                final selectedSegment = segments
+                    .expand((segment) => segment.subSegments)
+                    .firstWhere(
+                        (subSegment) => subSegment.subIndex == newValue);
+                // Only update selectedSubSegment in the state
+                setState(() {
+                  selectedSubSegment = selectedSegment;
+                });
+                await _fetchSegmentDetails(selectedSegment.segmentId);
+                setState(() {});
+              }
+            },
+          ),
+          if (selectedSubSegment != null)
+            buildLexicoConceptualRow(selectedSubSegment!, actualColumnCount)
+          else
+            const SizedBox.shrink(),
+          const SizedBox(height: 16),
+          const Text(
+            'Select Relation:',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          DropdownButton<String>(
+            value: null, // Set the initial value if needed
+            hint: const Text("Select Relation"),
+            items: dropdownOptions.map((option) {
+              return DropdownMenuItem<String>(
+                value: option,
+                child: Text(option),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              // Handle the selected value
+              setState(() {
+                selectedRelation = newValue;
+              });
+              print('Selected Relation: $newValue');
+            },
+          ),
         ],
       ),
     );
@@ -374,9 +454,16 @@ class _DiscourseTabState extends State<DiscourseTab> {
 
   List<DataColumn> _buildHeaderRow(SubSegment subSegment, int columnCount) {
     List<DataColumn> columns = [
-      const DataColumn(label: Text('Property')),
-      ...List.generate(columnCount,
-          (index) => DataColumn(label: Text('Index ${index + 1}'))),
+      const DataColumn(label: Text('Index')),
+      ...List.generate(columnCount, (index) {
+        if (index < subSegment.conceptDefinitions.length) {
+          var conceptDef = subSegment.conceptDefinitions[index];
+          return DataColumn(
+              label: Text(conceptDef.index.toString())); // Use index property
+        } else {
+          return const DataColumn(label: Text('N/A'));
+        }
+      }),
     ];
 
     return columns;
@@ -396,14 +483,30 @@ class _DiscourseTabState extends State<DiscourseTab> {
         ...List.generate(columnCount, (columnIndex) {
           if (columnIndex < subSegment.conceptDefinitions.length) {
             var conceptDef = subSegment.conceptDefinitions[columnIndex];
-            return DataCell(Text(conceptDef.getProperty(property)));
+            return DataCell(
+              SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: Column(
+                  children: [
+                    Text(conceptDef.getProperty(property)),
+                    Checkbox(
+                      value:
+                          false, // Initial value, can be changed based on logic
+                      onChanged: (bool? value) {
+                        // Handle checkbox selection logic here
+                        // Update state or perform actions
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
           } else {
             // Handle cases where columnCount exceeds conceptDefinitions length
             return const DataCell(Text('N/A'));
           }
         }),
       ];
-
       return DataRow(cells: cells);
     }).toList();
   }
