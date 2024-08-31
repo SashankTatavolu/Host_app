@@ -1,0 +1,5 @@
+<sent_id=Test_1_0001>
+#इन धाराओं को अपसरण और अभिसरण क्रियाओं के साथ क्रमशः आरोही और अवरोही क्रमों में वर्गीकृत किया गया है।
+Concept A	1	Category A	Morpheme A	main1:Relation A	-	Speaker A	-	1:Component A
+Concept B	2	Category B	Morpheme B	main2:Relation B	-	Speaker B	-	2:Component B
+</sent_id>

@@ -44,6 +44,10 @@ dependencies:
   dropdown_search: ^5.0.6
   url_launcher: ^6.3.0
   pdfrx: ^1.0.82
+  path_provider: ^2.1.4
+  open_file: ^3.5.2
+  file_saver: ^0.2.14
+
 
 dev_dependencies:
   flutter_test:

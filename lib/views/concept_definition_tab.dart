@@ -1,11 +1,15 @@
 // ignore_for_file: avoid_print
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import '../models/segment.dart';
 import '../services/auth_service.dart'; // Adjust based on your AuthService implementation
 import 'package:pdfrx/pdfrx.dart';
+import 'package:open_file/open_file.dart';
 
 class ConceptTab extends StatefulWidget {
   final int chapterId;
@@ -48,7 +52,7 @@ class _ConceptTabState extends State<ConceptTab> {
       }
 
       final url = Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -104,8 +108,8 @@ class _ConceptTabState extends State<ConceptTab> {
         continue;
       }
 
-      final conceptUrl = Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId');
+      final conceptUrl =
+          Uri.parse('http://localhost:5000/api/lexicals/segment/$segmentId');
       print('Fetching concepts from: $conceptUrl');
 
       try {
@@ -478,7 +482,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
     }
 
     final url = Uri.parse(
-        'https://canvas.iiit.ac.in/lc/api/concepts/getconcepts/$originalConceptName');
+        'http://localhost:5000/api/concepts/getconcepts/$originalConceptName');
     print('Fetching concept options from: $url');
 
     final response = await http.get(
@@ -508,6 +512,51 @@ class _ConceptEditorState extends State<ConceptEditor> {
       });
     } else {
       print('Failed to fetch concept options: ${response.statusCode}');
+    }
+  }
+
+  Future<void> _downloadUsr() async {
+    final token = await getJwtToken();
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: Could not retrieve JWT token')),
+      );
+      return;
+    }
+
+    final url =
+        'http://localhost:5000/api/segment_details/segment_details/${widget.subSegment.segmentId}/download';
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final directory = await getApplicationDocumentsDirectory();
+        final filePath = '${directory.path}/downloaded_usr.txt';
+
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+        print('File saved at: $filePath');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Download successful')),
+        );
+
+        OpenFile.open(filePath); // Automatically open the downloaded file
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      print('Error downloading file: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error downloading file')),
+      );
     }
   }
 
@@ -600,16 +649,27 @@ class _ConceptEditorState extends State<ConceptEditor> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ElevatedButton(
-          onPressed: () {
-            _showPdf(context); // Call the showPdf function when pressed
-          },
-          child: const Text("View PDF Guidelines"),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton(
+              onPressed: _downloadUsr, // Download button for USR
+              child: const Text("Download USR"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _showPdf(context); // Call the showPdf function when pressed
+              },
+              child: const Text("View PDF Guidelines"),
+            ),
+            ElevatedButton(
+              onPressed: () => _promptForColumnCount(widget.subSegment),
+              child: const Text("Change Concepts"),
+            ),
+          ],
         ),
-        ElevatedButton(
-          onPressed: () => _promptForColumnCount(widget.subSegment),
-          child: const Text("Change Concepts"),
-        ),
+        const SizedBox(height: 20),
         buildConceptDataTable(),
         const SizedBox(height: 20),
         ElevatedButton.icon(
@@ -740,7 +800,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                     onTap: () {
                       Navigator.of(context).pop();
                       setState(() {
-                        controllers[columnIndex]['Discourse rel']!.text = value;
+                        controllers[columnIndex]['Discourse Rel']?.text = value;
                       });
                     },
                   );
@@ -1077,7 +1137,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                                       child: AbsorbPointer(
                                         child: TextField(
                                           controller: controllers[i]
-                                              ['Discourse rel'],
+                                              ['Discourse Rel'],
                                           decoration: InputDecoration(
                                             labelText: 'Discourse Rel ${i + 1}',
                                           ),
@@ -1175,17 +1235,26 @@ class _ConceptEditorState extends State<ConceptEditor> {
 
     for (int i = 0; i < subSegment.columnCount; i++) {
       final conceptEntry = {
-        "segment_index": subSegment.segmentId,
+        "segment_index": subSegment.subIndex,
         "index": i + 1,
         "concept": controllers[i]['concept']!.text,
         "semantic_category": controllers[i]['semanticCategory']!.text,
         "morphological_semantics":
             controllers[i]['morphologicalSemantics']!.text,
         "speakers_view": controllers[i]['speakersView']!.text,
-        "relational": [], // Add relational data here if needed
+        "relational": [
+          {
+            "segment_index": subSegment.subIndex,
+            "index": i + 1,
+            "component_type": controllers[i]['Component Type']!.text,
+            "main_index": controllers[i]['Head Index']!.text,
+            "relation": controllers[i]['Dep Rel']!.text,
+            "is_main": controllers[i]['Is Main']!.text.toLowerCase() == 'true'
+          }
+        ], // Add relational data here if needed
         "construction": [
           {
-            "segment_index": controllers[i]['CxN head']!.text,
+            "segment_index": subSegment.subIndex,
             "index": i + 1,
             "construction":
                 '${controllers[i]['CxN head']!.text}: ${controllers[i]['Component Type']!.text}',
@@ -1195,7 +1264,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
         ],
         "discourse": [
           {
-            "segment_index": controllers[i]['Head Index']!.text,
+            "segment_index": subSegment.subIndex,
             "index": i + 1,
             "head_index": controllers[i]['Discourse Head Index']!.text,
             "relation":
@@ -1218,8 +1287,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
 
     print('Request body: ${jsonEncode(requestBody)}');
     final response = await http.post(
-      Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details'),
+      Uri.parse('http://localhost:5000/api/segment_details/segment_details'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -1411,8 +1479,8 @@ class _ConceptEditorState extends State<ConceptEditor> {
     final mainSegment = widget.segment.mainSegment;
     final subSegment = widget.subSegment;
     final segmentId = subSegment.segmentId;
-    final url = Uri.parse(
-        'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId');
+    final url =
+        Uri.parse('http://localhost:5000/api/lexicals/segment/$segmentId');
     final body = jsonEncode(widget.subSegment.conceptDefinitions.map((concept) {
       return {
         "segment_index": mainSegment, // Assuming you have this field
