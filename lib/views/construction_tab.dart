@@ -22,6 +22,9 @@ class _ConstructionTabState extends State<ConstructionTab> {
   List<Segment> segments = [];
   Map<String, dynamic>? segmentDetails;
   int columnCount = 0;
+  double segmentPanelWidth = 250.0; // Initial width for the segment panel
+  double minWidth = 150.0; // Minimum width for the segment panel
+  double maxWidth = 400.0;
 
   @override
   void initState() {
@@ -38,7 +41,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -71,9 +74,28 @@ class _ConstructionTabState extends State<ConstructionTab> {
     return Scaffold(
       body: Row(
         children: [
-          Expanded(
-            flex: 1,
+          SizedBox(
+            width: segmentPanelWidth,
             child: buildSegmentList(),
+          ),
+          MouseRegion(
+            cursor: SystemMouseCursors.resizeLeftRight,
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  segmentPanelWidth =
+                      (segmentPanelWidth + details.primaryDelta!)
+                          .clamp(minWidth, maxWidth);
+                });
+              },
+              child: Container(
+                width: 10,
+                color: Colors.grey[300],
+                child: const Center(
+                  child: Icon(Icons.drag_handle, color: Colors.grey),
+                ),
+              ),
+            ),
           ),
           Expanded(
             flex: 3,
@@ -94,22 +116,60 @@ class _ConstructionTabState extends State<ConstructionTab> {
       itemBuilder: (context, index) {
         Segment segment = segments[index];
         return ExpansionTile(
-          title: Text('${segment.mainSegment}: ${segment.text}'),
+          title: SelectableText(
+            '${segment.mainSegment}: ${segment.text}',
+            style: const TextStyle(color: Colors.black),
+          ),
           children: segment.subSegments.map((SubSegment subSegment) {
             return ListTile(
               leading: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  buildStatusCircle(
-                      'L', subSegment.isConceptDefinitionComplete),
-                  buildStatusCircle(
-                      'R', subSegment.isDependencyRelationDefined),
-                  buildStatusCircle('C', subSegment.isConstructionDefined),
-                  buildStatusCircle('D', subSegment.isDiscourseDefined),
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: subSegment.isConceptDefinitionComplete
+                        ? Colors.green[200]
+                        : Colors.grey[400],
+                    child: const Text('L',
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                  ),
+                  const SizedBox(width: 2),
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: subSegment.isDependencyRelationDefined
+                        ? Colors.green[200]
+                        : Colors.grey[400],
+                    child: const Text('R',
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                  ),
+                  const SizedBox(width: 2),
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: subSegment.isDiscourseDefined
+                        ? Colors.green[200]
+                        : Colors.grey[400],
+                    child: const Text('C',
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                  ),
+                  const SizedBox(width: 2),
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: subSegment.isDiscourseDefined
+                        ? Colors.green[200]
+                        : Colors.grey[400],
+                    child: const Text('D',
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                  ),
                 ],
               ),
-              title: Text(subSegment.text),
-              subtitle: Text(subSegment.subIndex),
+              title: SelectableText(
+                subSegment.text, // Make the subsegment text selectable
+                style: const TextStyle(color: Colors.black),
+              ),
+              subtitle: SelectableText(
+                subSegment.subIndex, // Make the subsegment index selectable
+                style: const TextStyle(color: Colors.grey),
+              ),
               onTap: () => selectSubSegment(subSegment),
             );
           }).toList(),
@@ -168,7 +228,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId/is_concept_generated');
+          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -206,7 +266,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/$segmentId');
+          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -271,7 +331,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
           content: SizedBox(
             width: 1000,
             height: 600,
-            child: PdfViewer.asset('assets/files/USR_GUIDELINES.pdf'),
+            child: PdfViewer.asset('assets/files/Construction.pdf'),
           ),
           actions: <Widget>[
             TextButton(
@@ -286,65 +346,145 @@ class _ConstructionTabState extends State<ConstructionTab> {
     );
   }
 
+  Future<void> _finalizeConstruction(SubSegment subSegment) async {
+    if (selectedSubSegment == null || segmentDetails == null) return;
+
+    try {
+      final token = await getJwtToken();
+      if (token == null) {
+        print("JWT token is null.");
+        return;
+      }
+
+      // Extract construction details from the segmentDetails
+      final List<dynamic> constructionArray =
+          segmentDetails!['construction'] ?? [];
+      final List<Map<String, dynamic>> constructionData = [];
+
+      for (var constructionItem in constructionArray) {
+        constructionData.add({
+          "index": constructionItem['index'],
+          "component_type": constructionItem['component_type'],
+          "concept_id": constructionItem['concept_id'],
+          "construction": constructionItem['cxn_index : component_type'],
+          "construction_id": constructionItem['construction_id'],
+          "cxn_index": constructionItem['cxn_index'],
+          "segment_id": constructionItem['segment_id'],
+          "segment_index": constructionItem['segment_index'],
+        });
+      }
+
+      // Prepare the final payload directly as a list
+      final payload = constructionData;
+
+      print(payload);
+
+      final url = Uri.parse(
+          'http://localhost:5000/api/constructions/segment/${subSegment.segmentId}/construction');
+      final response = await http.put(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('Construction finalized successfully.');
+      } else {
+        print('Failed to finalize construction: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error finalizing construction: $e');
+    }
+  }
+
   Widget buildConstructionTable(SubSegment subSegment) {
     TextEditingController constructionController =
         TextEditingController(text: selectedSubSegment?.construction);
+
+    // Define a scroll controller for horizontal scrolling
+    ScrollController horizontalScrollController = ScrollController();
 
     if (segmentDetails == null) {
       _fetchSegmentDetails(subSegment.segmentId);
       return const Center(child: CircularProgressIndicator());
     }
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: () => _showPdf(context),
-              child: const Text('Show PDF'),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ElevatedButton(
+            onPressed: () => _showPdf(context),
+            child: const Text('Show Guidelines'),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
+          child: Text(
+            '${subSegment.subIndex} : ${subSegment.text}',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16.0,
             ),
           ),
-          const SizedBox(height: 20),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columns: _buildHeaderRow(subSegment, columnCount),
-              rows: [
-                ..._buildDataRows(subSegment, columnCount),
-                buildTargetIndexRow(subSegment),
-                buildRelationsRow(subSegment),
-              ],
-            ),
-          ),
-          const SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                subSegment.construction = constructionController.text;
-                subSegment.isConstructionDefined = true;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Construction finalized successfully!'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo,
-              fixedSize: const Size(400, 55),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        ),
+        const SizedBox(height: 20),
+        // Scrollable horizontal DataTable
+        Expanded(
+          child: Scrollbar(
+            controller:
+                horizontalScrollController, // Assign the scroll controller
+            thumbVisibility: true, // Keeps the scrollbar visible
+            interactive: true,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              controller:
+                  horizontalScrollController, // Use the same controller here
+              child: DataTable(
+                columns: _buildHeaderRow(subSegment, columnCount),
+                rows: [
+                  ..._buildDataRows(subSegment, columnCount),
+                  buildTargetIndexRow(subSegment),
+                  buildRelationsRow(subSegment),
+                ],
               ),
             ),
-            child: const Text(
-              "Finalize Construction",
-              style: TextStyle(color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 30),
+        ElevatedButton(
+          onPressed: () {
+            _finalizeConstruction(subSegment);
+            setState(() {
+              subSegment.construction = constructionController.text;
+              subSegment.isConstructionDefined = true;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Construction finalized successfully!'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.indigo,
+            fixedSize: const Size(400, 55),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-        ],
-      ),
+          child: const Text(
+            "Finalize Construction",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 
@@ -396,18 +536,8 @@ class _ConstructionTabState extends State<ConstructionTab> {
       cells: [
         const DataCell(Text('CxN Index')),
         ...List.generate(columnCount, (index) {
-          final constructionItem = segmentDetails!['construction'][index];
-          final cxnIndex = constructionItem['cxn_index'];
-
           return DataCell(
-            Row(
-              children: [
-                Text(cxnIndex.toString()), // Display fetched cxn_index
-                Expanded(
-                  child: buildIndexDropdown(index, subSegment),
-                ),
-              ],
-            ),
+            buildIndexDropdown(index, subSegment),
           );
         }),
       ],
@@ -438,20 +568,41 @@ class _ConstructionTabState extends State<ConstructionTab> {
   }
 
   Widget buildIndexDropdown(int currentIndex, SubSegment subSegment) {
+    final constructionItem = segmentDetails!['construction'][currentIndex];
+    final initialIndex = constructionItem['cxn_index'];
+
+    // If the initial value is '-', set it to null to show the hint
+    String? initialIndexValue =
+        initialIndex != '-' ? initialIndex.toString() : null;
+
     return FormBuilderDropdown(
       name: 'index_$currentIndex',
-      items: List.generate(
-        columnCount,
-        (index) => DropdownMenuItem<String>(
-          value: (index + 1).toString(),
-          child: Text('${index + 1}'),
+      initialValue: initialIndexValue,
+      items: [
+        const DropdownMenuItem<String>(
+          value: '-', // Special value for "None"
+          child: Text('None'),
         ),
-      ),
+        ...List.generate(
+          columnCount,
+          (index) => DropdownMenuItem<String>(
+            value: (index + 1).toString(),
+            child: Text('${index + 1}'),
+          ),
+        ),
+      ],
       onChanged: (value) {
         setState(() {
           if (subSegment.dependencyRelations.length > currentIndex) {
+            // If "None" is selected, set the value to "-"
             subSegment.dependencyRelations[currentIndex].targetIndex =
-                int.parse(value!);
+                value == '-' ? -1 : int.parse(value!);
+
+            // Update the segmentDetails map accordingly
+            final constructionItem =
+                segmentDetails!['construction'][currentIndex];
+            constructionItem['cxn_index'] =
+                value == '-' ? '-' : int.parse(value!);
           }
         });
       },
@@ -459,7 +610,6 @@ class _ConstructionTabState extends State<ConstructionTab> {
   }
 
   Widget buildRelationTypeDropdown(int currentIndex, SubSegment subSegment) {
-    // Define the list of dropdown options
     final List<String> relationTypes = [
       'kriyAmUla',
       'verbalizer',
@@ -474,8 +624,8 @@ class _ConstructionTabState extends State<ConstructionTab> {
     ];
 
     return SizedBox(
-      width: 100, // Adjust width as needed
-      height: 35, // Adjust height as needed
+      width: 100,
+      height: 35,
       child: DropdownButton<String?>(
         isDense: true,
         onChanged: (newValue) {
@@ -483,10 +633,11 @@ class _ConstructionTabState extends State<ConstructionTab> {
             if (subSegment.dependencyRelations.length > currentIndex) {
               subSegment.dependencyRelations[currentIndex].relationType =
                   newValue ?? '';
+
+              // Update the segmentDetails map
               final constructionItem =
                   segmentDetails!['construction'][currentIndex];
-              constructionItem['component_type'] =
-                  newValue; // Update component_type
+              constructionItem['component_type'] = newValue;
             }
           });
         },
@@ -494,7 +645,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
           return DropdownMenuItem<String?>(
             value: relationType,
             child: SizedBox(
-              height: 30, // Adjust height as needed
+              height: 30,
               child: Text(relationType, style: const TextStyle(fontSize: 12)),
             ),
           );

@@ -41,9 +41,9 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   jwt_decode: ^0.3.1
   flutter_form_builder: ^9.3.0
-  dropdown_search: ^5.0.6
+  dropdown_search: ^6.0.0
   url_launcher: ^6.3.0
-  pdfrx: ^1.0.82
+  pdfrx: ^1.0.83
   path_provider: ^2.1.4
   open_file: ^3.5.2
   file_saver: ^0.2.14
@@ -81,10 +81,12 @@ flutter:
      - assets/images/institution1.png
      - assets/images/institution2.png
      - assets/images/About.png
-     - assets/files/USR_dependency_relation.pdf
+     - assets/files/USR_dependency_relation_row.pdf
      - assets/files/USR_Sentence_Segmentation.pdf
      - assets/files/USR_GUIDELINES.pdf
-     - assets/files/Lexico-Conceptual.pdf
+     - assets/files/Lexico-Conceptual.pdf 
+     - assets/files/Construction.pdf
+     - assets/files/USR_Co_ref.pdf
 
 
 

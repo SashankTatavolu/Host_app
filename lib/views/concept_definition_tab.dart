@@ -108,12 +108,12 @@ class _ConceptTabState extends State<ConceptTab> {
         continue;
       }
 
-      final conceptUrl =
-          Uri.parse('http://localhost:5000/api/lexicals/segment/$segmentId');
+      final conceptUrl = Uri.parse(
+          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
       print('Fetching concepts from: $conceptUrl');
 
       try {
-        final conceptResponse = await http.get(
+        final response = await http.get(
           conceptUrl,
           headers: {
             'Authorization': 'Bearer $token',
@@ -121,10 +121,13 @@ class _ConceptTabState extends State<ConceptTab> {
           },
         );
 
-        if (conceptResponse.statusCode == 200) {
-          List<dynamic> conceptsJson = jsonDecode(conceptResponse.body);
-          List<ConceptDefinition> conceptDefinitions = conceptsJson
-              .map((json) => ConceptDefinition.fromJson(json))
+        print('Response body: ${response.body}');
+        if (response.statusCode == 200) {
+          final jsonResponse = jsonDecode(response.body);
+          final List<dynamic> conceptJsonList =
+              jsonResponse['lexico_conceptual'] ?? [];
+          final List<ConceptDefinition> conceptDefinitions = conceptJsonList
+              .map((conceptJson) => ConceptDefinition.fromJson(conceptJson))
               .toList();
 
           if (mounted) {
@@ -137,16 +140,13 @@ class _ConceptTabState extends State<ConceptTab> {
           print(conceptDefinitions);
         } else {
           print(
-              'Failed to fetch concepts for segment $segmentId: ${conceptResponse.statusCode}');
+              'Failed to fetch concepts for segment $segmentId: ${response.statusCode}');
         }
       } catch (e) {
         print('Error fetching concepts for segment $segmentId: $e');
         // Display error message to the user
       }
     }
-    // if (!hasData) {
-    //   _promptForColumnCount(selectedSubSegment!);
-    // }
   }
 
   @override
@@ -199,7 +199,10 @@ class _ConceptTabState extends State<ConceptTab> {
       itemBuilder: (context, index) {
         Segment segment = segments[index];
         return ExpansionTile(
-          title: Text('${segment.mainSegment}: ${segment.text}'),
+          title: SelectableText(
+            '${segment.mainSegment}: ${segment.text}',
+            style: const TextStyle(color: Colors.black),
+          ),
           children: segment.subSegments.map((SubSegment subSegment) {
             return ListTile(
               leading: Row(
@@ -225,7 +228,7 @@ class _ConceptTabState extends State<ConceptTab> {
                   const SizedBox(width: 2),
                   CircleAvatar(
                     radius: 12,
-                    backgroundColor: subSegment.isConstructionDefined
+                    backgroundColor: subSegment.isDiscourseDefined
                         ? Colors.green[200]
                         : Colors.grey[400],
                     child: const Text('C',
@@ -242,8 +245,14 @@ class _ConceptTabState extends State<ConceptTab> {
                   ),
                 ],
               ),
-              subtitle: Text(subSegment.text),
-              title: Text(subSegment.subIndex),
+              title: SelectableText(
+                subSegment.text, // Make the subsegment text selectable
+                style: const TextStyle(color: Colors.black),
+              ),
+              subtitle: SelectableText(
+                subSegment.subIndex, // Make the subsegment index selectable
+                style: const TextStyle(color: Colors.grey),
+              ),
               onTap: () => _selectSubSegment(segment, subSegment),
             );
           }).toList(),
@@ -308,6 +317,7 @@ class ConceptEditor extends StatefulWidget {
 
 class _ConceptEditorState extends State<ConceptEditor> {
   final List<String> semanticCategories = [
+    '-',
     'per/male',
     'per/female',
     'place',
@@ -331,6 +341,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
   ];
 
   final List<String> morphologicalSemantics = [
+    '-',
     'pl',
     'mawup',
     'kqw',
@@ -343,6 +354,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
   ];
 
   final List<String> speakersViews = [
+    '-',
     'respect',
     'informal',
     'proximal',
@@ -367,6 +379,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
   ];
 
   List<String> relationTypes = [
+    '-',
     "k1",
     "k1s",
     "pk1",
@@ -436,6 +449,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
   ];
 
   List<String> discourserel = [
+    '-',
     'samuccaya',
     'AvaSyakawApariNAma',
     'kAryakAraNa',
@@ -455,6 +469,51 @@ class _ConceptEditorState extends State<ConceptEditor> {
     'samuccaya.awirikwa',
     'arWAwa',
     'kAryaxyowaka',
+  ];
+
+  final List<String> domainTerms = [
+    '-',
+    'geography',
+    'geography physical',
+    'recipe'
+  ];
+
+  final List<String> constructionOptions = [
+    '[3-waw]',
+    '[4-waw]',
+    '[5-waw]',
+    '[6-waw]',
+    '[7-waw]',
+    '[naF-waw]',
+    '[2-waw]',
+    '[karmaXAraya]',
+    '[xvigu]',
+    '[2-bahubrIhi]',
+    '[3-bahubrIhi]',
+    '[4-bahubrIhi]',
+    '[5-bahubrIhi]',
+    '[6-bahubrIhi]',
+    '[7-bahubrIhi]',
+    '[xvanxva]',
+    '[avyayIBAva]',
+    '[upapaxa]',
+    '[maXyamapaxalopI]',
+    '[conj_1]',
+    '[conj_2]',
+    '[conj_3]',
+    '[disjunct_1]',
+    '[disjunct_2]',
+    '[disjunct_3]',
+    '[span_1]',
+    '[span_2]',
+    '[meas_1]',
+    '[meas_2]',
+    '[cp_1]',
+    '[cp_2]',
+    '[cp_3]',
+    '[compound_1]',
+    '[compound_2]',
+    '[compound_3',
   ];
 
   Map<int, List<String>> conceptOptions = {};
@@ -626,7 +685,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("PDF Content"),
+          title: const Text("Show Guidelines"),
           content: SizedBox(
             width: 1000,
             height: 600,
@@ -670,6 +729,16 @@ class _ConceptEditorState extends State<ConceptEditor> {
           ],
         ),
         const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
+          child: Text(
+            '${widget.subSegment.subIndex} : ${widget.subSegment.text}',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16.0,
+            ),
+          ),
+        ),
         buildConceptDataTable(),
         const SizedBox(height: 20),
         ElevatedButton.icon(
@@ -772,6 +841,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
       (index) => {
         'index': TextEditingController(),
         'concept': TextEditingController(),
+        'domainTerm': TextEditingController(),
         'semanticCategory': TextEditingController(),
         'morphologicalSemantics': TextEditingController(),
         'speakersView': TextEditingController(),
@@ -786,7 +856,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
       },
     );
 
-    void _showDiscourseRelPopup(int columnIndex) {
+    void showDiscourseRelPopup(int columnIndex) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -848,8 +918,8 @@ class _ConceptEditorState extends State<ConceptEditor> {
                           for (int i = 0; i < subSegment.columnCount; i++)
                             DataColumn(
                               label: Text('Column ${i + 1}',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
                             ),
                         ],
                         rows: [
@@ -859,7 +929,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: TextField(
                                       controller: controllers[i]['index'],
                                       decoration: InputDecoration(
@@ -876,7 +946,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: Stack(
                                       children: [
                                         TextField(
@@ -922,11 +992,37 @@ class _ConceptEditorState extends State<ConceptEditor> {
                           ),
                           DataRow(
                             cells: [
+                              const DataCell(Text('Domain Term:')),
+                              for (int i = 0; i < subSegment.columnCount; i++)
+                                DataCell(
+                                  SizedBox(
+                                    width: 180.0,
+                                    child: DropdownButtonFormField<String>(
+                                      decoration: InputDecoration(
+                                        labelText: 'Domain Term ${i + 1}',
+                                      ),
+                                      items: domainTerms.map((String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) {
+                                        controllers[i]['domainTerm']!.text =
+                                            value!;
+                                      },
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          DataRow(
+                            cells: [
                               const DataCell(Text('Semantic Category:')),
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: DropdownButtonFormField<String>(
                                       decoration: InputDecoration(
                                         labelText: 'Semantic Category ${i + 1}',
@@ -953,7 +1049,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: DropdownButtonFormField<String>(
                                       decoration: InputDecoration(
                                         labelText: 'Morpho Semantics ${i + 1}',
@@ -981,7 +1077,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: DropdownButtonFormField<String>(
                                       decoration: InputDecoration(
                                         labelText: 'Speakers View ${i + 1}',
@@ -1007,7 +1103,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: TextField(
                                       controller: controllers[i]['CxN head'],
                                       decoration: InputDecoration(
@@ -1024,7 +1120,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: DropdownButtonFormField<String>(
                                       decoration: InputDecoration(
                                         labelText: 'Component Type ${i + 1}',
@@ -1050,7 +1146,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: TextField(
                                       controller: controllers[i]['Is Main'],
                                       decoration: InputDecoration(
@@ -1067,7 +1163,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: TextField(
                                       controller: controllers[i]['Head Index'],
                                       decoration: InputDecoration(
@@ -1084,7 +1180,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: DropdownButtonFormField<String>(
                                       decoration: InputDecoration(
                                         labelText: 'Dep Rel ${i + 1}',
@@ -1110,7 +1206,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: TextField(
                                       controller: controllers[i]
                                           ['Discourse head index'],
@@ -1129,10 +1225,10 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: GestureDetector(
                                       onTap: () {
-                                        _showDiscourseRelPopup(i);
+                                        showDiscourseRelPopup(i);
                                       },
                                       child: AbsorbPointer(
                                         child: TextField(
@@ -1154,7 +1250,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
                               for (int i = 0; i < subSegment.columnCount; i++)
                                 DataCell(
                                   SizedBox(
-                                    width: 150.0,
+                                    width: 180.0,
                                     child: TextField(
                                       controller: controllers[i]['Co-ref'],
                                       decoration: InputDecoration(
@@ -1272,6 +1368,13 @@ class _ConceptEditorState extends State<ConceptEditor> {
             "discourse":
                 '${controllers[i]['Discourse Head Index']!.text}: ${controllers[i]['Discourse Rel']!.text}', // Formatting value
           }
+        ],
+        "domain_term": [
+          {
+            "segment_index": subSegment.subIndex,
+            "index": i + 1,
+            "domain_term": controllers[i]['domainTerm']!.text
+          }
         ]
       };
       lexicoConceptual.add(conceptEntry);
@@ -1303,13 +1406,20 @@ class _ConceptEditorState extends State<ConceptEditor> {
     }
   }
 
-  SingleChildScrollView buildConceptDataTable() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columnSpacing: 12,
-        columns: _buildHeaderRow(),
-        rows: _buildDataRows(),
+  buildConceptDataTable() {
+    ScrollController horizontalScrollController = ScrollController();
+
+    return Scrollbar(
+      controller: horizontalScrollController,
+      thumbVisibility: true, // Keeps the scrollbar visible
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        controller: horizontalScrollController,
+        child: DataTable(
+          columnSpacing: 12,
+          columns: _buildHeaderRow(),
+          rows: _buildDataRows(),
+        ),
       ),
     );
   }
@@ -1317,7 +1427,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
   List<DataColumn> _buildHeaderRow() {
     // Add one more column for the row headers
     List<DataColumn> headers = [
-      const DataColumn(label: Text('Property')), // Header for the row header
+      const DataColumn(label: Text('COLUMN')), // Header for the row header
     ];
 
     headers.addAll(List.generate(
@@ -1342,17 +1452,22 @@ class _ConceptEditorState extends State<ConceptEditor> {
       'Morphological Semantics',
       "Speaker's View"
     ];
+
     return List.generate(properties.length, (rowIndex) {
       return DataRow(cells: [
-        DataCell(Text(properties[rowIndex])), // This is the row header
+        DataCell(Text(properties[rowIndex])), // Row header
         ...List.generate(widget.subSegment.columnCount, (columnIndex) {
           final conceptDef = widget.subSegment.conceptDefinitions[columnIndex];
           switch (rowIndex) {
             case 0: // Index
               return DataCell(
-                Text('${columnIndex + 1}'), // Display index starting from 1
+                Text(conceptDef.index
+                    .toString()), // Display index starting from 1
               );
             case 1: // Concept
+              String conceptValue = conceptDef.concept;
+
+              // Check if the concept starts and ends with []
               return DataCell(
                 Row(
                   children: [
@@ -1360,11 +1475,16 @@ class _ConceptEditorState extends State<ConceptEditor> {
                       child: TextField(
                         controller: TextEditingController.fromValue(
                             TextEditingValue(
-                                text: conceptDef.concept,
+                                text: conceptValue,
                                 selection: TextSelection.collapsed(
-                                    offset: conceptDef.concept.length))),
-                        onChanged: (value) => updateConceptProperty(
-                            columnIndex, properties[rowIndex], value),
+                                    offset: conceptValue.length))),
+                        onChanged: (value) {
+                          updateConceptProperty(
+                            columnIndex,
+                            properties[rowIndex],
+                            value,
+                          );
+                        },
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           contentPadding:
@@ -1375,8 +1495,16 @@ class _ConceptEditorState extends State<ConceptEditor> {
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () async {
-                        _showConceptOptionsPopup(
-                            columnIndex, conceptDef.concept);
+                        // Check if the concept starts and ends with []
+                        if (conceptValue.startsWith('[') &&
+                            conceptValue.endsWith(']')) {
+                          // Display constructionOptions if the concept is within brackets
+                          _showConstructionOptionsPopup(
+                              columnIndex, conceptValue);
+                        } else {
+                          // Otherwise, continue fetching options dynamically
+                          _showConceptOptionsPopup(columnIndex, conceptValue);
+                        }
                       },
                       child: const Icon(Icons.arrow_drop_down),
                     ),
@@ -1405,28 +1533,9 @@ class _ConceptEditorState extends State<ConceptEditor> {
                     columnIndex, properties[rowIndex], value),
               ));
             default:
-              // return DataCell(SizedBox(
-              //   width: 200,
-              //   child: TextField(
-              //     controller: TextEditingController.fromValue(TextEditingValue(
-              //         text: conceptDef.getProperty(properties[rowIndex]),
-              //         selection: TextSelection.collapsed(
-              //             offset: conceptDef
-              //                 .getProperty(properties[rowIndex])
-              //                 .length))),
-              //     onChanged: (value) => updateConceptProperty(
-              //         columnIndex, properties[rowIndex], value),
-              //     decoration: const InputDecoration(
-              //       border: OutlineInputBorder(),
-              //       contentPadding:
-              //           EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-              //     ),
-              //   ),
-              // ));
-
               return DataCell(
                 SizedBox(
-                  width: 120, // Adjust width as needed for each column
+                  width: 120, // Adjust width as needed
                   child: Text(
                     conceptDef.getProperty(properties[rowIndex]),
                     overflow: TextOverflow.ellipsis,
@@ -1439,26 +1548,106 @@ class _ConceptEditorState extends State<ConceptEditor> {
     });
   }
 
-  Widget _buildDropdown(String currentValue, List<String> options,
-      ValueChanged<String> onChanged) {
+  void _showConstructionOptionsPopup(int columnIndex, String conceptValue) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Construction Option'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: constructionOptions.map((option) {
+              return ListTile(
+                title: Text(option),
+                onTap: () {
+                  // Update concept with selected construction option
+                  updateConceptProperty(columnIndex, 'Concept', option);
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDropdown(
+    String selectedValue,
+    List<String> options,
+    ValueChanged<String> onChanged,
+  ) {
+    List<String> updatedOptions = List.from(options);
+    if (!updatedOptions.contains('others')) {
+      updatedOptions.add('others');
+    }
+
+    // Ensure that the selected value is in the updated options list
+    if (selectedValue.isNotEmpty && !updatedOptions.contains(selectedValue)) {
+      updatedOptions.add(selectedValue);
+    }
+
     return SizedBox(
-      width: 150,
+      width: 150, // Set the desired fixed width for the dropdown
       child: DropdownButton<String>(
-        isExpanded: true,
-        value: options.contains(currentValue) ? currentValue : null,
-        hint: const Text('Select'),
-        items: options.map((String value) {
+        isExpanded: true, // This ensures the dropdown content does not overflow
+        value: selectedValue.isEmpty ? null : selectedValue,
+        onChanged: (newValue) {
+          if (newValue == 'others') {
+            _showCustomInputDialog((customValue) {
+              if (customValue.isNotEmpty) {
+                if (!updatedOptions.contains(customValue)) {
+                  updatedOptions.add(customValue);
+                }
+                onChanged(customValue);
+              }
+            });
+          } else {
+            onChanged(newValue!);
+          }
+        },
+        items: updatedOptions.map((String value) {
           return DropdownMenuItem<String>(
             value: value,
             child: Text(value),
           );
         }).toList(),
-        onChanged: (value) {
-          if (value != null) {
-            onChanged(value);
-          }
-        },
       ),
+    );
+  }
+
+  void _showCustomInputDialog(ValueChanged<String> onCustomValueEntered) {
+    String customValue = '';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter Custom Value'),
+          content: TextField(
+            autofocus: true,
+            onChanged: (value) {
+              customValue = value;
+            },
+            decoration: const InputDecoration(hintText: 'Enter value'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                onCustomValueEntered(customValue);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

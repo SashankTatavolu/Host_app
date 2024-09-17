@@ -180,6 +180,8 @@ class DependencyRelation {
   String relationType;
   bool isMain;
   String mainIndex;
+  final int relationalId; // Add this field if needed
+  final int conceptId;
   String relation;
 
 // Constructor with default values
@@ -188,6 +190,8 @@ class DependencyRelation {
       this.targetIndex = 0,
       this.relationType = "",
       this.isMain = false,
+      required this.relationalId,
+      required this.conceptId,
       this.mainIndex = "",
       this.relation = ""});
 
@@ -198,7 +202,9 @@ class DependencyRelation {
         isMain: json['is_main'] ?? false,
         index: json['index'],
         mainIndex: json['main_index'],
-        relation: json['relation']);
+        relation: json['relation'],
+        relationalId: json['relational_id'],
+        conceptId: json['concept_id']);
   }
 // Method to update the target index
   void updateTargetIndex(int newIndex) {
@@ -287,6 +293,8 @@ class DependencyRelation {
       index: index,
       targetIndex: 0,
       relationType: '',
+      relationalId: 1,
+      conceptId: 1,
     );
   }
 

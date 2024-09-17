@@ -32,7 +32,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchProjects() async {
-    const url = 'https://canvas.iiit.ac.in/lc/api/projects/all';
+    const url = 'http://localhost:5000/api/projects/all';
     final authService = AuthService();
     final jwtToken = await authService.getToken();
 
@@ -97,7 +97,7 @@ class _HomePageState extends State<HomePage> {
       print('Username from JWT: $username'); // Print username from JWT
 
       final response = await http.get(
-        Uri.parse('https://canvas.iiit.ac.in/lc/api/users/all'),
+        Uri.parse('http://localhost:5000/api/users/all'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $jwtToken',
@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> addProject(
       String projectName, String description, String language) async {
-    const url = 'https://canvas.iiit.ac.in/lc/api/projects/add';
+    const url = 'http://localhost:5000/api/projects/add';
     final authService = AuthService();
     final jwtToken = await authService.getToken();
 

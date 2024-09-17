@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lc_frontend/views/construction_tab.dart';
 import 'package:lc_frontend/views/discourse_definition.dart';
+import 'package:lc_frontend/views/domain_term.dart';
 import 'package:lc_frontend/views/segment_tab.dart';
 import 'package:lc_frontend/views/concept_definition_tab.dart';
 import 'package:lc_frontend/widgets/custom_app_bar.dart';
+import 'package:lc_frontend/views/coref_page.dart';
 
 import '../models/segment.dart';
 import '../widgets/navigation_bar.dart';
@@ -43,46 +45,15 @@ class _ChapterPageState extends State<ChapterPage>
                   index: 1, concept: 'wyax', lexicalConceptualId: 1),
               ConceptDefinition(
                   index: 2, concept: 'XArA_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 3, concept: 'apasaraNa_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 4, concept: 'kriyA_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 5, concept: 'ArohI_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 6, concept: 'aBisaraNa_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 7, concept: 'kriyA_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 8, concept: 'avarohI_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 9, concept: 'krama_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 10, concept: 'vargIkqwa_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 11,
-                  concept: 'kara_1-yA_gayA_hE_1',
-                  lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 12,
-                  concept: '[karmaXAraya_1]',
-                  lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 13,
-                  concept: '[karmaXAraya_2]',
-                  lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 14, concept: '[conj_2]', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 15, concept: '[CP_1]', lexicalConceptualId: 1),
             ],
             dependencyRelations: [
               DependencyRelation(
-                  index: 1, targetIndex: 2, relationType: 'k1', isMain: false),
-              DependencyRelation(
-                  index: 2, targetIndex: 2, relationType: 'k1s', isMain: false),
-              DependencyRelation(
-                  index: 3, targetIndex: 0, relationType: 'main', isMain: true)
+                  index: 1,
+                  targetIndex: 2,
+                  relationType: 'k1',
+                  isMain: false,
+                  conceptId: 0,
+                  relationalId: 0),
             ],
             segmentId: 1,
           ),
@@ -98,21 +69,15 @@ class _ChapterPageState extends State<ChapterPage>
           conceptDefinitions: [
             ConceptDefinition(
                 index: 1, concept: "\$wyax", lexicalConceptualId: 1),
-            ConceptDefinition(
-                index: 2, concept: 'XarAwala', lexicalConceptualId: 1),
-            ConceptDefinition(
-                index: 3, concept: 'asamawala', lexicalConceptualId: 1),
-            ConceptDefinition(index: 4, concept: 'hE', lexicalConceptualId: 1)
           ],
           dependencyRelations: [
             DependencyRelation(
-                index: 1, targetIndex: 1, relationType: 'r6', isMain: false),
-            DependencyRelation(
-                index: 2, targetIndex: 3, relationType: 'k1', isMain: false),
-            DependencyRelation(
-                index: 3, targetIndex: 3, relationType: 'k1s', isMain: false),
-            DependencyRelation(
-                index: 4, targetIndex: 0, relationType: 'main', isMain: true)
+                index: 1,
+                targetIndex: 1,
+                relationType: 'r6',
+                isMain: false,
+                conceptId: 0,
+                relationalId: 0),
           ],
           discourse: '1.1:coref',
           segmentId: 1),
@@ -136,66 +101,15 @@ class _ChapterPageState extends State<ChapterPage>
                   index: 1, concept: 'pqWvI_1', lexicalConceptualId: 1),
               ConceptDefinition(
                   index: 2, concept: 'viviXa_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 3, concept: 'prakAra_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 4,
-                  concept: 'BU+Akqwi_1',
-                  morphSem: 'p1',
-                  lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 5, concept: 'parvawa_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 6, concept: 'paTAra_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 7,
-                  concept: 'pahAdZI_1',
-                  morphSem: 'p1',
-                  lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 8, concept: 'mExAna_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 9, concept: 'kataka_1', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 10, concept: 'uwKAwa', lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 11,
-                  concept: 'BUmi_1',
-                  morphSem: 'p1',
-                  lexicalConceptualId: 1),
-              ConceptDefinition(
-                  index: 12,
-                  concept: 'xiKa_1-AI_xewA_hE_1',
-                  lexicalConceptualId: 1),
             ],
             dependencyRelations: [
               DependencyRelation(
-                  index: 1, targetIndex: 11, relationType: 'k7', isMain: false),
-              DependencyRelation(
-                  index: 2, targetIndex: 2, relationType: 'mod', isMain: false),
-              DependencyRelation(
-                  index: 3, targetIndex: 3, relationType: 'r6', isMain: false),
-              DependencyRelation(
-                  index: 4, targetIndex: 11, relationType: 'k2', isMain: false),
-              DependencyRelation(
-                  index: 5, targetIndex: 3, relationType: 'ru', isMain: false),
-              DependencyRelation(
-                  index: 6, targetIndex: 3, relationType: 'ru', isMain: false),
-              DependencyRelation(
-                  index: 7, targetIndex: 3, relationType: 'ru', isMain: false),
-              DependencyRelation(
-                  index: 8, targetIndex: 3, relationType: 'ru', isMain: false),
-              DependencyRelation(
-                  index: 9, targetIndex: 3, relationType: 'ru', isMain: false),
-              DependencyRelation(
-                  index: 10,
-                  targetIndex: 10,
-                  relationType: 'mod',
-                  isMain: false),
-              DependencyRelation(
-                  index: 11, targetIndex: 3, relationType: 'ru', isMain: false),
-              DependencyRelation(
-                  index: 12, targetIndex: 0, relationType: 'main', isMain: true)
+                  index: 1,
+                  targetIndex: 11,
+                  relationType: 'k7',
+                  isMain: false,
+                  conceptId: 0,
+                  relationalId: 0),
             ],
             construction: "conj:[5,6,7,8,9,11]",
             segmentId: 1,
@@ -220,129 +134,15 @@ class _ChapterPageState extends State<ChapterPage>
                     index: 1, concept: '\$speaker', lexicalConceptualId: 1),
                 ConceptDefinition(
                     index: 2, concept: 'BU+prqRTa_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 3, concept: 'Juka_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 4,
-                    concept: 'muda_1',
-                    morphSem: 'p1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 5, concept: 'tUta_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 6,
-                    concept: 'SEla_1+saMswara_1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 7,
-                    concept: 'xeKa_1',
-                    morphSem: 'p1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 8,
-                    concept: 'mila_1-wA_hE_1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 9, concept: '\$yax', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 10, concept: 'apaNa', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 11,
-                    concept: 'mUla_1',
-                    morphSem: 'p1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 12, concept: 'rUpa_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 10,
-                    concept: 'samAnAMwara_1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 11,
-                    concept: 'rUpa_1',
-                    morphSem: 'p1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 12,
-                    concept: 'biCa_1-yA_WA_1',
-                    lexicalConceptualId: 1),
               ],
               dependencyRelations: [
                 DependencyRelation(
                     index: 1,
                     targetIndex: 7,
                     relationType: 'k1',
-                    isMain: false),
-                DependencyRelation(
-                    index: 2,
-                    targetIndex: 7,
-                    relationType: 'k7p',
-                    isMain: false),
-                DependencyRelation(
-                    index: 3,
-                    targetIndex: 7,
-                    relationType: 'rbks',
-                    isMain: false),
-                DependencyRelation(
-                    index: 4,
-                    targetIndex: 7,
-                    relationType: 'rbks',
-                    isMain: false),
-                DependencyRelation(
-                    index: 5,
-                    targetIndex: 7,
-                    relationType: 'RBKS',
-                    isMain: false),
-                DependencyRelation(
-                    index: 6,
-                    targetIndex: 7,
-                    relationType: 'k1',
-                    isMain: false),
-                DependencyRelation(
-                    index: 7,
-                    targetIndex: 7,
-                    relationType: 'r2',
-                    isMain: false),
-                DependencyRelation(
-                    index: 8,
-                    targetIndex: 0,
-                    relationType: 'main',
-                    isMain: true),
-                DependencyRelation(
-                    index: 9,
-                    targetIndex: 12,
-                    relationType: 'k1',
-                    isMain: false),
-                DependencyRelation(
-                    index: 10,
-                    targetIndex: 10,
-                    relationType: 'r6',
-                    isMain: false),
-                DependencyRelation(
-                    index: 11,
-                    targetIndex: 15,
-                    relationType: '',
-                    isMain: false),
-                DependencyRelation(
-                    index: 12,
-                    targetIndex: 12,
-                    relationType: 'k7',
-                    isMain: true),
-                DependencyRelation(
-                    index: 13,
-                    targetIndex: 12,
-                    relationType: 'k7',
-                    isMain: false),
-                DependencyRelation(
-                    index: 14,
-                    targetIndex: 5,
-                    relationType: 'rcdelim',
-                    isMain: false),
-                DependencyRelation(
-                    index: 15,
-                    targetIndex: 0,
-                    relationType: 'main',
-                    isMain: true)
+                    isMain: false,
+                    conceptId: 0,
+                    relationalId: 0),
               ],
               construction: "conj:[3,4,5]",
               discourse: "6:coref",
@@ -365,101 +165,15 @@ class _ChapterPageState extends State<ChapterPage>
               conceptDefinitions: [
                 ConceptDefinition(
                     index: 1, concept: 'pqWvI_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 2, concept: 'viviXa_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 3, concept: 'prakAra_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 4,
-                    concept: 'BU+Akqwi_1',
-                    morphSem: 'p1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 5, concept: 'parvawa_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 6, concept: 'paTAra_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 7,
-                    concept: 'pahAdZI_1',
-                    morphSem: 'p1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 8, concept: 'mExAna_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 9, concept: 'kataka_1', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 10, concept: 'uwKAwa', lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 11,
-                    concept: 'BUmi_1',
-                    morphSem: 'p1',
-                    lexicalConceptualId: 1),
-                ConceptDefinition(
-                    index: 12,
-                    concept: 'xiKa_1-AI_xewA_hE_1',
-                    lexicalConceptualId: 1),
               ],
               dependencyRelations: [
                 DependencyRelation(
                     index: 1,
                     targetIndex: 11,
                     relationType: 'k7',
-                    isMain: false),
-                DependencyRelation(
-                    index: 2,
-                    targetIndex: 2,
-                    relationType: 'mod',
-                    isMain: false),
-                DependencyRelation(
-                    index: 3,
-                    targetIndex: 3,
-                    relationType: 'r6',
-                    isMain: false),
-                DependencyRelation(
-                    index: 4,
-                    targetIndex: 11,
-                    relationType: 'k2',
-                    isMain: false),
-                DependencyRelation(
-                    index: 5,
-                    targetIndex: 3,
-                    relationType: 'ru',
-                    isMain: false),
-                DependencyRelation(
-                    index: 6,
-                    targetIndex: 3,
-                    relationType: 'ru',
-                    isMain: false),
-                DependencyRelation(
-                    index: 7,
-                    targetIndex: 3,
-                    relationType: 'ru',
-                    isMain: false),
-                DependencyRelation(
-                    index: 8,
-                    targetIndex: 3,
-                    relationType: 'ru',
-                    isMain: false),
-                DependencyRelation(
-                    index: 9,
-                    targetIndex: 3,
-                    relationType: 'ru',
-                    isMain: false),
-                DependencyRelation(
-                    index: 10,
-                    targetIndex: 10,
-                    relationType: 'mod',
-                    isMain: false),
-                DependencyRelation(
-                    index: 11,
-                    targetIndex: 3,
-                    relationType: 'ru',
-                    isMain: false),
-                DependencyRelation(
-                    index: 12,
-                    targetIndex: 0,
-                    relationType: 'main',
-                    isMain: true)
+                    isMain: false,
+                    conceptId: 0,
+                    relationalId: 0),
               ],
               construction: "conj:[5,6,7,8,9,11]",
               segmentId: 1),
@@ -481,11 +195,26 @@ class _ChapterPageState extends State<ChapterPage>
         ],
         dependencyRelations: [
           DependencyRelation(
-              index: 1, targetIndex: 2, relationType: 'k1', isMain: false),
+              index: 1,
+              targetIndex: 2,
+              relationType: 'k1',
+              isMain: false,
+              conceptId: 0,
+              relationalId: 0),
           DependencyRelation(
-              index: 2, targetIndex: 2, relationType: 'k1s', isMain: false),
+              index: 2,
+              targetIndex: 2,
+              relationType: 'k1s',
+              isMain: false,
+              conceptId: 0,
+              relationalId: 0),
           DependencyRelation(
-              index: 3, targetIndex: 0, relationType: 'main', isMain: true)
+              index: 3,
+              targetIndex: 0,
+              relationType: 'main',
+              isMain: true,
+              conceptId: 0,
+              relationalId: 0)
         ],
         segmentId: 1,
       ),
@@ -507,11 +236,26 @@ class _ChapterPageState extends State<ChapterPage>
         ],
         dependencyRelations: [
           DependencyRelation(
-              index: 1, targetIndex: 2, relationType: 'k1', isMain: false),
+              index: 1,
+              targetIndex: 2,
+              relationType: 'k1',
+              isMain: false,
+              conceptId: 0,
+              relationalId: 0),
           DependencyRelation(
-              index: 2, targetIndex: 2, relationType: 'k1s', isMain: false),
+              index: 2,
+              targetIndex: 2,
+              relationType: 'k1s',
+              isMain: false,
+              conceptId: 0,
+              relationalId: 0),
           DependencyRelation(
-              index: 3, targetIndex: 0, relationType: 'main', isMain: true)
+              index: 3,
+              targetIndex: 0,
+              relationType: 'main',
+              isMain: true,
+              conceptId: 0,
+              relationalId: 0)
         ],
         segmentId: 1,
       ),
@@ -533,11 +277,26 @@ class _ChapterPageState extends State<ChapterPage>
         ],
         dependencyRelations: [
           DependencyRelation(
-              index: 1, targetIndex: 2, relationType: 'k1', isMain: false),
+              index: 1,
+              targetIndex: 2,
+              relationType: 'k1',
+              isMain: false,
+              conceptId: 0,
+              relationalId: 0),
           DependencyRelation(
-              index: 2, targetIndex: 2, relationType: 'k1s', isMain: false),
+              index: 2,
+              targetIndex: 2,
+              relationType: 'k1s',
+              isMain: false,
+              conceptId: 0,
+              relationalId: 0),
           DependencyRelation(
-              index: 3, targetIndex: 0, relationType: 'main', isMain: true)
+              index: 3,
+              targetIndex: 0,
+              relationType: 'main',
+              isMain: true,
+              conceptId: 0,
+              relationalId: 0)
         ],
         segmentId: 1,
       ),
@@ -559,11 +318,26 @@ class _ChapterPageState extends State<ChapterPage>
         ],
         dependencyRelations: [
           DependencyRelation(
-              index: 1, targetIndex: 2, relationType: 'k1', isMain: false),
+              index: 1,
+              targetIndex: 2,
+              relationType: 'k1',
+              isMain: false,
+              conceptId: 0,
+              relationalId: 0),
           DependencyRelation(
-              index: 2, targetIndex: 2, relationType: 'k1s', isMain: false),
+              index: 2,
+              targetIndex: 2,
+              relationType: 'k1s',
+              isMain: false,
+              conceptId: 0,
+              relationalId: 0),
           DependencyRelation(
-              index: 3, targetIndex: 0, relationType: 'main', isMain: true)
+              index: 3,
+              targetIndex: 0,
+              relationType: 'main',
+              isMain: true,
+              conceptId: 0,
+              relationalId: 0)
         ],
         segmentId: 1,
       ),
@@ -573,7 +347,7 @@ class _ChapterPageState extends State<ChapterPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
   }
 
   @override
@@ -604,9 +378,11 @@ class _ChapterPageState extends State<ChapterPage>
                   Tab(text: 'Chapter'),
                   Tab(text: 'Segment'),
                   Tab(text: 'Lexico Conceptual'),
+                  Tab(text: 'Domain Term'),
                   Tab(text: 'Construction'),
                   Tab(text: 'Relational'),
                   Tab(text: 'Discourse'),
+                  Tab(text: 'Coref')
                 ],
               ),
             ),
@@ -622,6 +398,9 @@ class _ChapterPageState extends State<ChapterPage>
                     segments: segments,
                     chapterId: widget.chapterId,
                   ),
+                  DomainTermTab(
+                    chapterId: widget.chapterId,
+                  ),
                   ConstructionTab(
                     chapterId: widget.chapterId.toString(),
                     // segments: segments,
@@ -632,7 +411,11 @@ class _ChapterPageState extends State<ChapterPage>
                   ),
                   DiscourseTab(
                     chapterId: widget.chapterId,
-                  )
+                    // segments: segments,
+                  ),
+                  CorefTab(
+                    chapterId: widget.chapterId,
+                  ),
                 ],
               ),
             ),

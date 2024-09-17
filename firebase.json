@@ -9,7 +9,7 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "destination": "https://canvas.iiit.ac.in/lc/api/**"
+        "destination": "http://localhost:5000/api/**"
       }
     ]
   }

@@ -36,7 +36,7 @@ class _SegmentTabState extends State<SegmentTab> {
 
     final response = await http.get(
       Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments'),
+          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments'),
       headers: {'Authorization': 'Bearer $token'},
     );
 

@@ -7,16 +7,16 @@ import 'dart:convert';
 import 'package:pdfrx/pdfrx.dart';
 import 'concept_definition_tab.dart';
 
-class DiscourseTab extends StatefulWidget {
+class CorefTab extends StatefulWidget {
   final int chapterId;
 
-  const DiscourseTab({super.key, required this.chapterId});
+  const CorefTab({super.key, required this.chapterId});
 
   @override
-  _DiscourseTabState createState() => _DiscourseTabState();
+  _CorefTabState createState() => _CorefTabState();
 }
 
-class _DiscourseTabState extends State<DiscourseTab> {
+class _CorefTabState extends State<CorefTab> {
   SubSegment? selectedSubSegment;
   List<Segment> segments = [];
   Map<String, dynamic>? segmentDetails;
@@ -30,6 +30,8 @@ class _DiscourseTabState extends State<DiscourseTab> {
   double maxWidth = 400.0;
 
   final List<String> relationTypes = [
+    'coref',
+    '-',
     'samuccaya',
     'AvaSyakawApariNAma',
     'kAryakAraNa',
@@ -275,7 +277,7 @@ class _DiscourseTabState extends State<DiscourseTab> {
             child: selectedSubSegment == null
                 ? const Center(
                     child: Text('Select a subsegment to configure Discourse'))
-                : buildDiscourseTable(selectedSubSegment!),
+                : buildCorefTable(selectedSubSegment!),
           ),
         ],
       ),
@@ -393,7 +395,7 @@ class _DiscourseTabState extends State<DiscourseTab> {
           content: SizedBox(
             width: 1000,
             height: 600,
-            child: PdfViewer.asset('assets/files/USR_dependency_relation.pdf'),
+            child: PdfViewer.asset('assets/files/USR_Co_ref.pdf'),
           ),
           actions: <Widget>[
             TextButton(
@@ -526,19 +528,28 @@ class _DiscourseTabState extends State<DiscourseTab> {
     );
   }
 
-  // final _tableKey = GlobalKey();
-
-  Widget buildDiscourseTable(SubSegment subSegment) {
+  Widget buildCorefTable(SubSegment subSegment) {
     if (segmentDetails == null) {
-      return const Center(
-          child: CircularProgressIndicator()); // Show loading indicator
+      return const Center(child: CircularProgressIndicator());
     }
 
     final discourseArray = segmentDetails!['discourse'] as List<dynamic>;
 
-    // Populate selectedDiscourseIndices based on the presence of head_index
+    // Create TextEditingControllers for Head Index and Relation
+    final headIndexControllers = List.generate(
+      discourseArray.length,
+      (index) {
+        final discourseItem = discourseArray[index];
+        return TextEditingController(
+          text: (discourseItem['relation'] == 'coref')
+              ? discourseItem['head_index']?.toString() ?? ''
+              : '', // Only show if relation is 'coref'
+        );
+      },
+    );
+
     final selectedDiscourseIndices = discourseArray.map((discourseItem) {
-      return discourseItem['head_index'] != null &&
+      return discourseItem['relation'] == 'coref' &&
               discourseItem['head_index'].toString() != '-'
           ? true
           : false;
@@ -546,172 +557,155 @@ class _DiscourseTabState extends State<DiscourseTab> {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Column(
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              _showPdf(context);
-            },
-            child: const Text('Show Guidelines'),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
-            child: Text(
-              '${subSegment.subIndex} : ${subSegment.text}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16.0,
+      child: Scrollbar(
+        controller: ScrollController(),
+        thumbVisibility: true, // Keeps the scrollbar visible
+        interactive: true,
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                _showPdf(context);
+              },
+              child: const Text('Show Guidelines'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
+              child: Text(
+                '${subSegment.subIndex} : ${subSegment.text}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16.0,
+                ),
               ),
             ),
-          ),
-          DataTable(
-            columnSpacing: 8.0,
-            dataTextStyle: const TextStyle(fontSize: 14),
-            headingTextStyle:
-                const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            columns: _buildHeaderRow(subSegment, columnCount),
-            rows: _buildDataRows(subSegment, columnCount) +
-                [
-                  // Adding a row for checkboxes
-                  DataRow(
-                    cells: [
-                      const DataCell(Text('')),
-                      ...List.generate(columnCount, (columnIndex) {
-                        String? relation =
-                            discourseArray[columnIndex]['relation'];
-
-                        return DataCell(Checkbox(
-                          value: relation != 'coref' &&
-                              selectedDiscourseIndices[columnIndex],
-                          onChanged: (bool? newValue) {
-                            setState(() {
-                              if (newValue != null) {
-                                selectedDiscourseIndices[columnIndex] =
-                                    newValue;
-                              }
-
-                              // Find the previously checked checkbox
-                              int prevCheckedIndex = -1;
-                              for (int i = 0;
-                                  i < selectedDiscourseIndices.length;
-                                  i++) {
-                                if (selectedDiscourseIndices[i] &&
-                                    i != columnIndex) {
-                                  prevCheckedIndex = i;
-                                  break;
-                                }
-                              }
-
-                              // Shift the head index and relation values of previously ticked checkbox to the newly checked ticked box
-                              if (prevCheckedIndex != -1) {
-                                String? prevHeadIndex =
-                                    discourseArray[prevCheckedIndex]
-                                        ['head_index'];
-                                String? prevRelation =
-                                    discourseArray[prevCheckedIndex]
-                                        ['relation'];
-
-                                if (prevHeadIndex != null) {
-                                  discourseArray[columnIndex]['head_index'] =
-                                      prevHeadIndex;
-                                }
-
-                                if (prevRelation != null) {
-                                  discourseArray[columnIndex]['relation'] =
-                                      prevRelation;
-                                }
-
-                                // Clear the previously checked box's head index and relation values
-                                discourseArray[prevCheckedIndex]['head_index'] =
-                                    null;
-                                discourseArray[prevCheckedIndex]['relation'] =
-                                    null;
-                              }
-                            });
-                          },
-                        ));
-                      }),
-                    ],
-                  ),
-                  DataRow(
-                    cells: [
-                      const DataCell(Text('Head Index')),
-                      ...List.generate(columnCount, (columnIndex) {
-                        String? relation =
-                            discourseArray[columnIndex]['relation'];
-
-                        return DataCell(TextField(
-                          controller: TextEditingController(
-                            text: relation == 'coref'
-                                ? '' // Keep the field empty if relation is 'coref'
-                                : discourseArray[columnIndex]['head_index']
-                                        ?.toString() ??
-                                    '',
-                          ),
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          onChanged: (value) {
-                            // Always allow the field to be edited
-                            discourseArray[columnIndex]['head_index'] = value;
-                          },
-                        ));
-                      }),
-                    ],
-                  ),
-                  DataRow(
-                    cells: [
-                      const DataCell(Text('Relation')),
-                      ...List.generate(columnCount, (columnIndex) {
-                        String? currentRelation =
-                            discourseArray[columnIndex]['relation'];
-
-                        // Ensure the current value is part of the relationTypes list
-                        if (!relationTypes.contains(currentRelation)) {
-                          currentRelation =
-                              null; // Set to null if it doesn't match
-                        }
-
-                        return DataCell(
-                          SizedBox(
-                            width:
-                                150, // Set the desired width for the dropdown
-                            child: DropdownButton<String>(
-                              isExpanded:
-                                  true, // Ensures the text is not clipped
-                              value: currentRelation == 'coref'
-                                  ? null
-                                  : currentRelation,
-                              hint: const Text(''),
-                              items: relationTypes.map((String relation) {
-                                return DropdownMenuItem<String>(
-                                  value: relation,
-                                  child: Text(relation),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  discourseArray[columnIndex]['relation'] =
+            DataTable(
+              columnSpacing: 8.0,
+              dataTextStyle: const TextStyle(fontSize: 14),
+              headingTextStyle:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              columns: _buildHeaderRow(subSegment, columnCount),
+              rows: _buildDataRows(subSegment, columnCount) +
+                  [
+                    DataRow(
+                      cells: [
+                        const DataCell(Text('')),
+                        ...List.generate(columnCount, (columnIndex) {
+                          return DataCell(Checkbox(
+                            value: selectedDiscourseIndices[columnIndex],
+                            onChanged: (bool? newValue) {
+                              setState(() {
+                                if (newValue != null) {
+                                  selectedDiscourseIndices[columnIndex] =
                                       newValue;
-                                });
-                              },
+                                }
+
+                                // Find the previously checked checkbox
+                                int prevCheckedIndex = -1;
+                                for (int i = 0;
+                                    i < selectedDiscourseIndices.length;
+                                    i++) {
+                                  if (selectedDiscourseIndices[i] &&
+                                      i != columnIndex) {
+                                    prevCheckedIndex = i;
+                                    break;
+                                  }
+                                }
+
+                                // Shift the head index and relation values of previously ticked checkbox to the newly checked ticked box
+                                if (prevCheckedIndex != -1) {
+                                  String? prevHeadIndex =
+                                      discourseArray[prevCheckedIndex]
+                                          ['head_index'];
+                                  String? prevRelation =
+                                      discourseArray[prevCheckedIndex]
+                                          ['relation'];
+
+                                  if (prevHeadIndex != null) {
+                                    discourseArray[columnIndex]['head_index'] =
+                                        prevHeadIndex;
+                                  }
+
+                                  if (prevRelation != null) {
+                                    discourseArray[columnIndex]['relation'] =
+                                        prevRelation;
+                                  }
+
+                                  // Clear the previously checked box's head index and relation values
+                                  discourseArray[prevCheckedIndex]
+                                      ['head_index'] = null;
+                                  discourseArray[prevCheckedIndex]['relation'] =
+                                      null;
+                                }
+                              });
+                            },
+                          ));
+                        }),
+                      ],
+                    ),
+                    DataRow(
+                      cells: [
+                        const DataCell(Text('Head Index')),
+                        ...List.generate(columnCount, (columnIndex) {
+                          return DataCell(TextField(
+                            controller: headIndexControllers[columnIndex],
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              isDense: true,
                             ),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ],
-          ),
-          Padding(
+                            onChanged: (value) {
+                              discourseArray[columnIndex]['head_index'] = value;
+                            },
+                          ));
+                        }),
+                      ],
+                    ),
+                    DataRow(
+                      cells: [
+                        const DataCell(Text('Relation')),
+                        ...List.generate(columnCount, (columnIndex) {
+                          String? currentRelation =
+                              discourseArray[columnIndex]['relation'];
+
+                          if (currentRelation != 'coref') {
+                            currentRelation = null;
+                          }
+
+                          return DataCell(
+                            SizedBox(
+                              width: 150,
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: currentRelation,
+                                hint: const Text(''),
+                                items: relationTypes.map((String relation) {
+                                  return DropdownMenuItem<String>(
+                                    value: relation,
+                                    child: Text(relation),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    discourseArray[columnIndex]['relation'] =
+                                        newValue;
+                                  });
+                                },
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ],
+            ),
+            Padding(
               padding: const EdgeInsets.all(8.0),
               child: DropdownButton<SubSegment>(
                 value: segments
                         .expand((segment) => segment.subSegments)
                         .contains(dropdownSelectedSubSegment)
                     ? dropdownSelectedSubSegment
-                    : null, // Ensure value is either in the list or null
+                    : null,
                 hint: const Text('Select Connecting Segment'),
                 items: segments
                     .expand((segment) => segment.subSegments)
@@ -730,42 +724,27 @@ class _DiscourseTabState extends State<DiscourseTab> {
                     await _fetchConceptDetails(newValue.segmentId);
                   }
                 },
-              )),
-          if (_isConceptSelected) buildConceptTable(dropdownSelectedSubSegment),
-          // Padding(
-          //   padding: const EdgeInsets.all(8.0),
-          //   child: DropdownButton<String>(
-          //     value: selectedRelationType,
-          //     hint: const Text('Select Relation Type'),
-          //     items: relationTypes.map((String relation) {
-          //       return DropdownMenuItem<String>(
-          //         value: relation,
-          //         child: Text(relation),
-          //       );
-          //     }).toList(),
-          //     onChanged: (String? newValue) {
-          //       setState(() {
-          //         selectedRelationType = newValue;
-          //       });
-          //     },
-          //   ),
-          // ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.done, color: Colors.white),
-              label: const Text('Finalize Discourse',
-                  style: TextStyle(color: Color.fromRGBO(255, 255, 255, 1))),
-              onPressed: () => finalizeDiscourse(context, subSegment),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                fixedSize: const Size(400, 55),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
-          ),
-        ],
+            if (_isConceptSelected)
+              buildConceptTable(dropdownSelectedSubSegment),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.done, color: Colors.white),
+                label: const Text('Finalize Coref',
+                    style: TextStyle(color: Color.fromRGBO(255, 255, 255, 1))),
+                onPressed: () => finalizeDiscourse(context, subSegment),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  fixedSize: const Size(400, 55),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

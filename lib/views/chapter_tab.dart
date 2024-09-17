@@ -99,7 +99,7 @@ class _ChapterTabState extends State<ChapterTab> {
   Future<String> fetchChapterContent(int chapterId) async {
     print('Fetching chapter content for chapter ID: $chapterId');
     String baseUrl =
-        'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/$chapterId/text';
+        'http://localhost:5000/api/chapters/by_chapter/$chapterId/text';
     final String? jwtToken = await getJwtToken();
 
     if (jwtToken == null) {

@@ -25,6 +25,10 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
   Map<String, dynamic>? segmentDetails;
   int columnCount = 0;
 
+  double segmentPanelWidth = 250.0; // Initial width for the segment panel
+  double minWidth = 150.0; // Minimum width for the segment panel
+  double maxWidth = 400.0;
+
   @override
   void initState() {
     super.initState();
@@ -40,7 +44,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -86,7 +90,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId/is_concept_generated');
+          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -120,7 +124,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/$segmentId');
+          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -184,31 +188,36 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       // Convert SubSegment data to the required format
+      final List<dynamic> dependencyArray = segmentDetails!['relational'] ?? [];
       List<Map<String, dynamic>> dependencyData = [];
-      for (int i = 0; i < subSegment.columnCount; i++) {
+      for (var dependencyItem in dependencyArray) {
         dependencyData.add({
-          'segment_index': subSegment.segmentId,
-          'index': i,
-          'target_index': subSegment.dependencyRelations[i].targetIndex,
-          'relation_type': subSegment.dependencyRelations[i].relationType,
-          'is_main': subSegment.dependencyRelations[i].isMain,
+          'relational_id': dependencyItem['relational_id'],
+          'segment_index': dependencyItem['segment_index'],
+          'index': dependencyItem['index'],
+          'component_type': dependencyItem['component_type'],
+          'main_index': dependencyItem['main_index'],
+          'relation': dependencyItem['relation'],
+          'is_main': dependencyItem['is_main'],
+          'concept_id': dependencyItem['concept_id'],
         });
       }
 
-      final response = await http.post(
+      print(dependencyData);
+
+      final response = await http.put(
         Uri.parse(
-            'https://canvas.iiit.ac.in/lc/api/relations/segment/${subSegment.segmentId}/relational'),
+            'http://localhost:5000/api/relations/segment/${subSegment.segmentId}/relational'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'dependencies': dependencyData}),
+        body: jsonEncode(dependencyData),
       );
 
       print(response);
 
       if (response.statusCode == 200) {
-        // Show success dialog
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -226,7 +235,6 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
           ),
         );
       } else {
-        // Show error dialog
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -267,9 +275,28 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
     return Scaffold(
       body: Row(
         children: [
-          Expanded(
-            flex: 1,
+          SizedBox(
+            width: segmentPanelWidth,
             child: buildSegmentList(),
+          ),
+          MouseRegion(
+            cursor: SystemMouseCursors.resizeLeftRight,
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  segmentPanelWidth =
+                      (segmentPanelWidth + details.primaryDelta!)
+                          .clamp(minWidth, maxWidth);
+                });
+              },
+              child: Container(
+                width: 10,
+                color: Colors.grey[300],
+                child: const Center(
+                  child: Icon(Icons.drag_handle, color: Colors.grey),
+                ),
+              ),
+            ),
           ),
           Expanded(
             flex: 3,
@@ -289,45 +316,40 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       itemBuilder: (context, index) {
         Segment segment = segments[index];
         return ExpansionTile(
-          title: Text('${segment.mainSegment}: ${segment.text}'),
+          title: SelectableText(
+            '${segment.mainSegment}: ${segment.text}',
+            style: const TextStyle(color: Colors.black),
+          ),
           children: segment.subSegments.map((SubSegment subSegment) {
             return ListTile(
               leading: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   CircleAvatar(
-                    radius: 12, // Smaller radius for a compact appearance
+                    radius: 12,
                     backgroundColor: subSegment.isConceptDefinitionComplete
                         ? Colors.green[200]
                         : Colors.grey[400],
                     child: const Text('L',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white)), // Adjusted font size
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
                   ),
-                  const SizedBox(
-                      width: 2), // Provides spacing between the avatars
+                  const SizedBox(width: 2),
                   CircleAvatar(
-                    radius: 12, // Consistent smaller radius for both avatars
+                    radius: 12,
                     backgroundColor: subSegment.isDependencyRelationDefined
                         ? Colors.green[200]
                         : Colors.grey[400],
                     child: const Text('R',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white)), // Adjusted font size
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
                   ),
-                  const SizedBox(
-                      width: 2), // Provides spacing between the avatars
+                  const SizedBox(width: 2),
                   CircleAvatar(
-                    radius: 12, // Consistent smaller radius for both avatars
-                    backgroundColor: subSegment.isConstructionDefined
+                    radius: 12,
+                    backgroundColor: subSegment.isDiscourseDefined
                         ? Colors.green[200]
                         : Colors.grey[400],
                     child: const Text('C',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white)), // Adjusted font size
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
                   ),
                   const SizedBox(width: 2),
                   CircleAvatar(
@@ -340,8 +362,14 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
                   ),
                 ],
               ),
-              title: Text(subSegment.text),
-              subtitle: Text(subSegment.subIndex),
+              title: SelectableText(
+                subSegment.text, // Make the subsegment text selectable
+                style: const TextStyle(color: Colors.black),
+              ),
+              subtitle: SelectableText(
+                subSegment.subIndex, // Make the subsegment index selectable
+                style: const TextStyle(color: Colors.grey),
+              ),
               onTap: () => selectSubSegment(subSegment),
             );
           }).toList(),
@@ -392,7 +420,8 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
           content: SizedBox(
             width: 1000,
             height: 600,
-            child: PdfViewer.asset('assets/files/USR_dependency_relation.pdf'),
+            child:
+                PdfViewer.asset('assets/files/USR_dependency_relation_row.pdf'),
           ),
           actions: <Widget>[
             TextButton(
@@ -414,72 +443,97 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
     }
 
     final constructionArray = segmentDetails!['construction'] as List<dynamic>;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Column(
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              _showPdf(context);
-            },
-            child: const Text('Show More Info'),
+    ScrollController horizontalScrollController = ScrollController();
+
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            _showPdf(context);
+          },
+          child: const Text('Show Guidelines'),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
+          child: Text(
+            '${subSegment.subIndex} : ${subSegment.text}',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16.0,
+            ),
           ),
-          DataTable(
-            columnSpacing: 8.0, // Reduce spacing between columns
-            dataTextStyle: const TextStyle(fontSize: 14), // Smaller text size
-            headingTextStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold), // Smaller heading text size
-            columns: _buildHeaderRow(subSegment, columnCount),
-            rows: _buildDataRows(subSegment, columnCount) +
-                [
-                  DataRow(
-                    cells: [
-                      const DataCell(Text('CxN Index')),
-                      ...List.generate(columnCount, (columnIndex) {
-                        final constructionItem = constructionArray[columnIndex];
-                        final cxnIndex = constructionItem['cxn_index'];
-                        return DataCell(Text(cxnIndex.toString()));
-                      }),
+        ),
+        const SizedBox(height: 20),
+        // Horizontal scrollable DataTable
+        Expanded(
+          child: Scrollbar(
+            controller: horizontalScrollController,
+            thumbVisibility: true, // Keeps the scrollbar visible
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              controller: horizontalScrollController,
+              child: DataTable(
+                columnSpacing: 8.0, // Reduce spacing between columns
+                dataTextStyle:
+                    const TextStyle(fontSize: 14), // Smaller text size
+                headingTextStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold), // Smaller heading text size
+                columns: _buildHeaderRow(subSegment, columnCount),
+                rows: _buildDataRows(subSegment, columnCount) +
+                    [
+                      DataRow(
+                        cells: [
+                          const DataCell(Text('CxN Index')),
+                          ...List.generate(columnCount, (columnIndex) {
+                            final constructionItem =
+                                constructionArray[columnIndex];
+                            final cxnIndex = constructionItem['cxn_index'];
+                            return DataCell(Text(cxnIndex.toString()));
+                          }),
+                        ],
+                      ),
+                      DataRow(
+                        cells: [
+                          const DataCell(Text('Component Type')),
+                          ...List.generate(columnCount, (columnIndex) {
+                            final constructionItem =
+                                constructionArray[columnIndex];
+                            final componentType =
+                                constructionItem['component_type'];
+                            return DataCell(Text(componentType));
+                          }),
+                        ],
+                      ),
+                      DataRow(
+                        cells: List.generate(columnCount + 1,
+                            (index) => const DataCell(Text(' '))),
+                      ),
+                      buildMainStatusRow(subSegment),
+                      buildTargetIndexRow(subSegment),
+                      buildRelationsRow(subSegment),
                     ],
-                  ),
-                  DataRow(
-                    cells: [
-                      const DataCell(Text('Component Type')),
-                      ...List.generate(columnCount, (columnIndex) {
-                        final constructionItem = constructionArray[columnIndex];
-                        final componentType =
-                            constructionItem['component_type'];
-                        return DataCell(Text(componentType));
-                      }),
-                    ],
-                  ),
-                  DataRow(
-                    cells: List.generate(
-                        columnCount + 1, (index) => const DataCell(Text(' '))),
-                  ),
-                  buildMainStatusRow(subSegment),
-                  buildTargetIndexRow(subSegment),
-                  buildRelationsRow(subSegment),
-                ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.done, color: Colors.white),
-              label: const Text('Finalize Dependency Relation',
-                  style: TextStyle(color: Colors.white)),
-              onPressed: () => finalizeRelation(context, subSegment),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                fixedSize: const Size(400, 55),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 30),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.done, color: Colors.white),
+            label: const Text('Finalize Dependency Relation',
+                style: TextStyle(color: Colors.white)),
+            onPressed: () => finalizeRelation(context, subSegment),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo,
+              fixedSize: const Size(400, 55),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -534,42 +588,8 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       cells: [
         const DataCell(Text('Head Index')),
         ...List.generate(columnCount, (index) {
-          final relation = subSegment.dependencyRelations.length > index
-              ? subSegment.dependencyRelations[index]
-              : null; // Handle null case
-
           return DataCell(
-            Row(
-              children: [
-                Text(relation?.mainIndex.toString() ?? 'N/A'),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 80, // Set the width of the dropdown
-                  child: DropdownButton<int>(
-                    value: relation?.targetIndex ?? 0,
-                    items: List.generate(
-                      columnCount,
-                      (index) => DropdownMenuItem<int>(
-                        value: index,
-                        child: Text((index + 1).toString(),
-                            style: const TextStyle(
-                                fontSize: 14)), // Adjust font size
-                      ),
-                    ),
-                    onChanged: (newValue) {
-                      setState(() {
-                        if (relation != null) {
-                          relation.targetIndex =
-                              newValue ?? -1; // Update targetIndex
-                          print('Selected value: $newValue');
-                        }
-                      });
-                    },
-                    iconSize: 16, // Adjust the icon size
-                  ),
-                ),
-              ],
-            ),
+            buildIndexDropdown(index, subSegment),
           );
         }),
       ],
@@ -581,37 +601,15 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       cells: [
         const DataCell(Text('Relation Type')),
         ...List.generate(columnCount, (index) {
-          final relation = subSegment.dependencyRelations.length > index
-              ? subSegment.dependencyRelations[index]
-              : null; // Handle null case
+          final dependencyItem = segmentDetails!['relational'][index];
+          final relationType = dependencyItem['relation']; // Handle null case
 
           return DataCell(
             Row(
               children: [
-                Text(relation?.relation ??
-                    'N/A'), // Display fetched relation type
-                const SizedBox(
-                    width: 8), // Add some spacing between text and dropdown
-                SizedBox(
-                  width: 80, // Adjust the width as needed
-                  child: DropdownButton<String>(
-                    value: null, // No initial value
-                    isExpanded: true, // Ensure it fills the container width
-                    items: relation?.getRelationTypes().map((type) {
-                      return DropdownMenuItem<String>(
-                        value: type,
-                        child: Text(type),
-                      );
-                    }).toList(),
-                    onChanged: (newValue) {
-                      setState(() {
-                        if (relation != null) {
-                          relation.relation = newValue!;
-                          // Trigger UI update here
-                        }
-                      });
-                    },
-                  ),
+                Text(relationType), // Display fetched component_type
+                Expanded(
+                  child: buildRelationTypeDropdown(index, subSegment),
                 ),
               ],
             ),
@@ -622,25 +620,45 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
   }
 
   Widget buildIndexDropdown(int currentIndex, SubSegment subSegment) {
-    int initialIndex = subSegment.dependencyRelations.length > currentIndex
-        ? subSegment.dependencyRelations[currentIndex].targetIndex
-        : 0; // Use default value (0) if out of bounds
+    final constructionItem = segmentDetails!['relational'][currentIndex];
+    final initialIndex = constructionItem['main_index'];
+
+    // If the initial value is '-', set it to null to show the hint
+    String? initialIndexValue =
+        initialIndex != '-' ? initialIndex.toString() : null;
 
     return FormBuilderDropdown(
       name: 'index_$currentIndex',
-      initialValue: (initialIndex + 1).toString(), // Always set initial value
-      items: List.generate(
-        columnCount,
-        (index) => DropdownMenuItem<String>(
-          value: (index + 1).toString(),
-          child: Text('${index + 1}'),
+      initialValue: initialIndexValue,
+      items: [
+        const DropdownMenuItem<String>(
+          value: '-', // Special value for "None"
+          child: Text('None'),
         ),
-      ),
+        const DropdownMenuItem<String>(
+          value: '0', // Special value for "None"
+          child: Text('0'),
+        ),
+        ...List.generate(
+          columnCount,
+          (index) => DropdownMenuItem<String>(
+            value: (index + 1).toString(),
+            child: Text('${index + 1}'),
+          ),
+        ),
+      ],
       onChanged: (value) {
         setState(() {
           if (subSegment.dependencyRelations.length > currentIndex) {
+            // If "None" is selected, set the value to "-"
             subSegment.dependencyRelations[currentIndex].targetIndex =
-                int.parse(value!);
+                value == '-' ? -1 : int.parse(value!);
+
+            // Update the segmentDetails map accordingly
+            final constructionItem =
+                segmentDetails!['relational'][currentIndex];
+            constructionItem['main_index'] =
+                value == '-' ? '-' : int.parse(value!);
           }
         });
       },
@@ -654,25 +672,102 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
     //       child: CircularProgressIndicator()); // Show loading indicator
     // }
 
-    List<String> relationTypes = ['None', 'Subject', 'Object'];
-    return FormBuilderDropdown(
-      name: 'relation_type_$currentIndex',
-      initialValue: subSegment.dependencyRelations.length > currentIndex
-          ? subSegment.dependencyRelations[currentIndex].relationType
-          : 'None',
-      items: relationTypes
-          .map((type) => DropdownMenuItem<String>(
-                value: type,
-                child: Text(type),
-              ))
-          .toList(),
-      onChanged: (value) {
-        setState(() {
-          if (subSegment.dependencyRelations.length > currentIndex) {
-            subSegment.dependencyRelations[currentIndex].relationType = value!;
-          }
-        });
-      },
+    List<String> relationTypes = [
+      "k1",
+      "k1s",
+      "pk1",
+      "mk1",
+      "jk1",
+      "k2",
+      "k2p",
+      "k2g",
+      "k2s",
+      "k3",
+      "k4",
+      "k4a",
+      "k5",
+      "k5prk",
+      "k7t",
+      "k7p",
+      "k7",
+      "k7a",
+      "r6",
+      "rsm",
+      "rsma",
+      "rhh",
+      "mod",
+      "rbks",
+      "rvks",
+      "dem",
+      "ord",
+      "card",
+      "quant",
+      "intf",
+      "quantmore",
+      "quantless",
+      "rblsk",
+      "rblpk",
+      "rblak",
+      "rpk",
+      "rsk",
+      "rh",
+      "rt",
+      "re",
+      "rs",
+      "rask1",
+      "rask2",
+      "rask3",
+      "rask4",
+      "rask5",
+      "rask7",
+      "rasneg",
+      "ru",
+      "rv",
+      "rn",
+      "rd",
+      "rad",
+      "neg",
+      "freq",
+      "rp",
+      "krvn",
+      "vkvn",
+      "cxnpart",
+      "dur",
+      "extent",
+      "vIpsA",
+      "rcelab",
+      "rcdelim",
+      "rcsamAnakAla",
+      "rcloc"
+    ];
+    return SizedBox(
+      width: 120,
+      height: 35,
+      child: DropdownButton<String?>(
+        isDense: true,
+        onChanged: (newValue) {
+          setState(() {
+            if (subSegment.dependencyRelations.length > currentIndex) {
+              subSegment.dependencyRelations[currentIndex].relationType =
+                  newValue ?? '';
+
+              // Update the segmentDetails map
+              final constructionItem =
+                  segmentDetails!['relational'][currentIndex];
+              constructionItem['relation'] = newValue;
+            }
+          });
+        },
+        items: relationTypes.map((relationType) {
+          return DropdownMenuItem<String?>(
+            value: relationType,
+            child: SizedBox(
+              height: 30,
+              child: Text(relationType, style: const TextStyle(fontSize: 12)),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -683,40 +778,24 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
         ...List.generate(columnCount, (index) {
           final relation = subSegment.dependencyRelations.length > index
               ? subSegment.dependencyRelations[index]
-              : null; // Handle null case
+              : null;
 
-          final isMain = relation != null &&
-              relation.targetIndex == 0 &&
-              relation.relation == 'main';
+          // Debugging: Print the current relation details
+          print('Building row for index $index: $relation');
+
+          final isMain = relation != null && relation.relation == 'main';
 
           return DataCell(
             Checkbox(
-              value: isMain, // Set initial value based on fetched data
-              onChanged: (newValue) => setState(() {
+              value: isMain,
+              onChanged: (newValue) {
                 if (relation != null) {
-                  if (newValue!) {
-                    // Set current index as main
-                    relation.mainIndex = '0';
-                    relation.relation = 'main';
-
-                    // Clear other main relations (including the previous one)
-                    for (int i = 0;
-                        i < subSegment.dependencyRelations.length;
-                        i++) {
-                      if (i != index) {
-                        // subSegment.dependencyRelations[i].mainIndex = '';
-                        subSegment.dependencyRelations[i].relation = '';
-                        subSegment.dependencyRelations[i].isMain = false;
-                      }
-                    }
-                  } else {
-                    // Clear head index and relation type if not main
-                    relation.mainIndex = '';
-                    relation.relation = '';
-                  }
-                  relation.isMain = newValue; // Update isMain after checks
+                  setState(() {
+                    // Update relations based on the new value
+                    setMainRelation(subSegment, index, newValue!);
+                  });
                 }
-              }),
+              },
             ),
           );
         }),
@@ -725,27 +804,23 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
   }
 
   void setMainRelation(SubSegment subSegment, int mainIndex, bool isMain) {
-    if (isMain) {
-      for (int i = 0; i < subSegment.dependencyRelations.length; i++) {
-        if (i == mainIndex) {
-          // Set the selected relation as 'main'
-          subSegment.dependencyRelations[i].relationType = 'main';
-          subSegment.dependencyRelations[i].targetIndex = 0;
-          subSegment.dependencyRelations[i].isMain =
-              true; // Lock the 'main' so it can't be edited
-        } else {
-          // Reset other relations to default values
-          subSegment.dependencyRelations[i].relationType =
-              ''; // Assuming '1' is your default type
-          subSegment.dependencyRelations[i].targetIndex = 1;
-          subSegment.dependencyRelations[i].isMain = false; // Unlock others
-        }
+    for (int i = 0; i < subSegment.dependencyRelations.length; i++) {
+      final relation = subSegment.dependencyRelations[i];
+      if (i == mainIndex) {
+        // Set the selected relation as 'main'
+        relation.relation = isMain ? 'main' : '';
+        relation.targetIndex = isMain ? 0 : 0;
+        relation.isMain = isMain;
+      } else {
+        // Clear other relations
+        relation.relation = '';
+        relation.targetIndex = 0;
+        relation.isMain = false;
       }
-    } else {
-      subSegment.dependencyRelations[mainIndex].relationType = '';
-      subSegment.dependencyRelations[mainIndex].targetIndex = 1;
-      subSegment.dependencyRelations[mainIndex].isMain = false;
+      // Debugging output
+      print(
+          'Updated Index $i: relation=${relation.relation}, targetIndex=${relation.targetIndex}, isMain=${relation.isMain}');
     }
-    setState(() {}); // Update the state to refresh the UI
+    setState(() {}); // Ensure UI is updated
   }
 }
