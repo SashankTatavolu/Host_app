@@ -40,7 +40,7 @@
 // ignore_for_file: avoid_print
 
 import 'package:flutter/material.dart';
-import 'package:lc_frontend/views/chapter_page.dart';
+import 'package:lc_frontend/views/USR_validation/chapter_contents_page.dart';
 
 import '../models/chapter.dart';
 import 'chapter_widget.dart';
@@ -72,7 +72,7 @@ class ChapterListWidget extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ChapterPage(
+                      builder: (context) => ChapterContentsPage(
                         chapterId: chapters[index].chapterId, // Pass chapter id
                       ),
                     ),

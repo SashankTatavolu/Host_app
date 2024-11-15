@@ -19,9 +19,7 @@ class ProjectInfoCardSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.indigo.shade100,
         borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(10),
-            bottomRight: Radius.circular(10)
-        ),
+            bottomLeft: Radius.circular(10), bottomRight: Radius.circular(10)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

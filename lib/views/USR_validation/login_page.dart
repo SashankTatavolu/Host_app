@@ -1,9 +1,10 @@
 // ignore_for_file: avoid_print
 
 import 'package:flutter/material.dart';
-import 'package:lc_frontend/views/home_page.dart';
-import '../services/auth_service.dart';
-import '../models/login_request.dart';
+import 'package:lc_frontend/views/USR_validation/projects_page.dart';
+import 'package:lc_frontend/views/USR_creation/USR_projects.dart'; // Add this import for USRProjectsPage
+import '../../services/auth_service.dart';
+import '../../models/login_request.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginPage extends StatefulWidget {
@@ -124,18 +125,70 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _showErrorDialog(String message) {
+  void _showSelectionDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Login Failed'),
-          content: Text(message),
+          title: const Text('Select Option',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Card(
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.check_circle_outline,
+                      color: Colors.green),
+                  title: const Text(
+                    'USR Validation',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close the dialog
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ProjectsPage()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 10),
+              Card(
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.create, color: Colors.blue),
+                  title: const Text(
+                    'USR Creation',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close the dialog
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const USRProjectsPage()),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
           actions: <Widget>[
             TextButton(
-              child: const Text('OK'),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.red),
+              ),
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Close the dialog
               },
             ),
           ],
@@ -159,15 +212,32 @@ class _LoginPageState extends State<LoginPage> {
       // Store username in secure storage
       await _storage.write(key: 'username', value: _usernameController.text);
 
-      // Navigate to HomePage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      // Show pop-up with options
+      _showSelectionDialog();
     } else {
       // Show login error
       print('Login Failed');
       _showErrorDialog('Incorrect username or password. Please try again.');
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Login Failed'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }

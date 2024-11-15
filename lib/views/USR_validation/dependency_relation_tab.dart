@@ -1,13 +1,17 @@
 // import 'dart:io';
 
 // ignore_for_file: avoid_print
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
-import '../models/segment.dart'; // Adjust the import according to your file structure
+import '../../models/segment.dart'; // Adjust the import according to your file structure
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:pdfrx/pdfrx.dart';
+import '../file_download/USR_download_web.dart';
 import 'concept_definition_tab.dart'; // Assuming this is where getJwtToken is defined
 
 class DependencyRelationPage extends StatefulWidget {
@@ -44,7 +48,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -90,7 +94,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
+          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -124,7 +128,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
+          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -195,8 +199,8 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
           'relational_id': dependencyItem['relational_id'],
           'segment_index': dependencyItem['segment_index'],
           'index': dependencyItem['index'],
-          'component_type': dependencyItem['component_type'],
-          'main_index': dependencyItem['main_index'],
+          'head_relation': dependencyItem['head_relation'],
+          'head_index': dependencyItem['head_index'],
           'relation': dependencyItem['relation'],
           'is_main': dependencyItem['is_main'],
           'concept_id': dependencyItem['concept_id'],
@@ -207,7 +211,7 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
 
       final response = await http.put(
         Uri.parse(
-            'http://localhost:5000/api/relations/segment/${subSegment.segmentId}/relational'),
+            'https://canvas.iiit.ac.in/lc/api/relations/segment/${subSegment.segmentId}/relational'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -257,18 +261,102 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
     }
   }
 
-  // void finalizeRelation(BuildContext context, SubSegment subSegment) {
-  //   setState(() {
-  //     subSegment.isDependencyRelationDefined = true;
-  //   });
+  Future<void> _generateText(SubSegment subSegment) async {
+    final token = await getJwtToken();
+    if (token == null) {
+      // Handle token retrieval failure
+      return;
+    }
 
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(
-  //       content: Text('Dependency relation finalized successfully!'),
-  //       duration: Duration(seconds: 2),
-  //     ),
-  //   );
-  // }
+    final chapterId = widget.chapterId; // Replace with the actual chapter ID
+    print(chapterId);
+    final segmentId =
+        subSegment.segmentId; // Replace with the actual segment ID
+
+    // Generate text
+    final response = await http.post(
+      Uri.parse('https://canvas.iiit.ac.in/lc/api/generate/process_single'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'chapter_id': chapterId,
+        'segment_ids': [segmentId],
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      print(response);
+      // Text generated successfully, now download it
+      await _downloadGeneratedText(chapterId, segmentId);
+    } else {
+      // Handle error
+      print('Failed to generate text: ${response.body}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('error generating the file'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<void> _downloadGeneratedText(int chapterId, int segmentId) async {
+    final token = await getJwtToken();
+    if (token == null) {
+      // Handle token retrieval failure
+      return;
+    }
+
+    final response = await http.get(
+      Uri.parse(
+          'https://canvas.iiit.ac.in/lc/api/generate/generate/text?segment_id=$segmentId&chapter_id=$chapterId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Use the chapterId and segmentId in the filename
+      final fileName =
+          'Generated_text_chapter_${chapterId}_segment_$segmentId.txt';
+
+      // Parse the JSON to extract the generated_text field
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      final generatedText = responseData['generated_text'];
+
+      if (generatedText == null) {
+        print('Error: No generated text found in the response');
+        return;
+      }
+
+      // Saving the generated text to a file
+      if (kIsWeb) {
+        // Use the extracted generatedText for the web
+        downloadFileWeb(fileName, generatedText);
+      } else {
+        // For mobile or desktop
+        final directory = await getApplicationDocumentsDirectory();
+        final filePath = '${directory.path}/$fileName';
+        final file = File(filePath);
+
+        // Write the generated text to the file
+        await file.writeAsString(generatedText);
+
+        // Notify user about the file save location
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Text generated successfully! Saved at: $filePath'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } else {
+      // Handle error
+      print('Failed to download text: ${response.body}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -447,11 +535,23 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
 
     return Column(
       children: [
-        ElevatedButton(
-          onPressed: () {
-            _showPdf(context);
-          },
-          child: const Text('Show Guidelines'),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                _showPdf(context);
+              },
+              child: const Text('Show Guidelines'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await _generateText(subSegment);
+              },
+              child: const Text('Generate Text'),
+            ),
+          ],
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
@@ -568,15 +668,18 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
 
     return List.generate(properties.length, (rowIndex) {
       return DataRow(cells: [
-        DataCell(Text(properties[rowIndex])),
+        DataCell(SizedBox(height: 50, child: Text(properties[rowIndex]))),
         ...List.generate(columnCount, (columnIndex) {
           var conceptDef = subSegment.conceptDefinitions.isNotEmpty
               ? subSegment.conceptDefinitions[columnIndex]
               : null;
           return DataCell(
-            conceptDef != null
-                ? Text(conceptDef.getProperty(properties[rowIndex]))
-                : const Text('N/A'), // Handle missing data
+            SizedBox(
+              height: 50, // Fixed height for each cell
+              child: conceptDef != null
+                  ? Text(conceptDef.getProperty(properties[rowIndex]))
+                  : const Text('N/A'), // Handle missing data
+            ),
           );
         }),
       ]);
@@ -639,13 +742,12 @@ class _DependencyRelationPageState extends State<DependencyRelationPage> {
           value: '0', // Special value for "None"
           child: Text('0'),
         ),
-        ...List.generate(
-          columnCount,
-          (index) => DropdownMenuItem<String>(
-            value: (index + 1).toString(),
-            child: Text('${index + 1}'),
-          ),
-        ),
+        ...subSegment.conceptDefinitions.map((conceptDef) {
+          return DropdownMenuItem<String>(
+            value: conceptDef.index.toString(),
+            child: Text(conceptDef.index.toString()),
+          );
+        }),
       ],
       onChanged: (value) {
         setState(() {

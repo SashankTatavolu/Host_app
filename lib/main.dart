@@ -24,7 +24,7 @@
 
 import 'package:flutter/material.dart';
 // import 'package:lc_frontend/views/home_page.dart';
-import 'package:lc_frontend/views/lc_page.dart';
+import 'package:lc_frontend/views/USR_validation/home_page.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 void main() {
@@ -60,9 +60,9 @@ class AuthChecker extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator();
         } else if (snapshot.hasData && snapshot.data != null) {
-          return const LcPage();
+          return const HomePage();
         } else {
-          return const LcPage();
+          return const HomePage();
         }
       },
     );

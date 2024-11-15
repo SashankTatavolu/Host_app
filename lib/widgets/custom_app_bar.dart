@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../views/lc_page.dart';
+import '../views/USR_validation/home_page.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({super.key});
@@ -48,7 +48,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   await storage.delete(key: 'access_token');
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => const LcPage()),
+                    MaterialPageRoute(builder: (context) => const HomePage()),
                     (Route<dynamic> route) => false,
                   );
                 },

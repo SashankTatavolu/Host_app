@@ -1,22 +1,22 @@
 // ignore_for_file: avoid_print
 
 import 'package:flutter/material.dart';
-import '../models/segment.dart';
+import '../../models/segment.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:pdfrx/pdfrx.dart';
 import 'concept_definition_tab.dart';
 
-class CorefTab extends StatefulWidget {
+class DiscourseTab extends StatefulWidget {
   final int chapterId;
 
-  const CorefTab({super.key, required this.chapterId});
+  const DiscourseTab({super.key, required this.chapterId});
 
   @override
-  _CorefTabState createState() => _CorefTabState();
+  _DiscourseTabState createState() => _DiscourseTabState();
 }
 
-class _CorefTabState extends State<CorefTab> {
+class _DiscourseTabState extends State<DiscourseTab> {
   SubSegment? selectedSubSegment;
   List<Segment> segments = [];
   Map<String, dynamic>? segmentDetails;
@@ -30,8 +30,6 @@ class _CorefTabState extends State<CorefTab> {
   double maxWidth = 400.0;
 
   final List<String> relationTypes = [
-    'coref',
-    '-',
     'samuccaya',
     'AvaSyakawApariNAma',
     'kAryakAraNa',
@@ -71,7 +69,7 @@ class _CorefTabState extends State<CorefTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -117,7 +115,7 @@ class _CorefTabState extends State<CorefTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
+          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -151,7 +149,7 @@ class _CorefTabState extends State<CorefTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
+          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -213,8 +211,8 @@ class _CorefTabState extends State<CorefTab> {
         return;
       }
 
-      final url =
-          Uri.parse('http://localhost:5000/api/lexicals/segment/$segmentId');
+      final url = Uri.parse(
+          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -277,7 +275,7 @@ class _CorefTabState extends State<CorefTab> {
             child: selectedSubSegment == null
                 ? const Center(
                     child: Text('Select a subsegment to configure Discourse'))
-                : buildCorefTable(selectedSubSegment!),
+                : buildDiscourseTable(selectedSubSegment!),
           ),
         ],
       ),
@@ -395,7 +393,7 @@ class _CorefTabState extends State<CorefTab> {
           content: SizedBox(
             width: 1000,
             height: 600,
-            child: PdfViewer.asset('assets/files/USR_Co_ref.pdf'),
+            child: PdfViewer.asset('assets/files/USR_Discourse.pdf'),
           ),
           actions: <Widget>[
             TextButton(
@@ -441,7 +439,7 @@ class _CorefTabState extends State<CorefTab> {
       // Send PUT request to finalize the discourse
       final response = await http.put(
         Uri.parse(
-            'http://localhost:5000/api/discourse/segment/${subSegment.segmentId}/discourse'),
+            'https://canvas.iiit.ac.in/lc/api/discourse/segment/${subSegment.segmentId}/discourse'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -495,15 +493,14 @@ class _CorefTabState extends State<CorefTab> {
     if (subSegment == null) {
       return const Center(child: Text('Select a concept to view details'));
     }
-
     final conceptDefinitions = subSegment.conceptDefinitions;
-    final ScrollController scrollController = ScrollController();
+    final scrollController = ScrollController();
 
     return Scrollbar(
       controller: scrollController,
-      thumbVisibility: true, // Keeps the scrollbar visible
+      thumbVisibility: true,
       child: SingleChildScrollView(
-        controller: scrollController, // Use the same controller
+        controller: scrollController,
         scrollDirection: Axis.horizontal,
         child: DataTable(
           columnSpacing: 8.0,
@@ -527,40 +524,29 @@ class _CorefTabState extends State<CorefTab> {
       ),
     );
   }
+  // final _tableKey = GlobalKey();
 
-  Widget buildCorefTable(SubSegment subSegment) {
+  Widget buildDiscourseTable(SubSegment subSegment) {
     if (segmentDetails == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+          child: CircularProgressIndicator()); // Show loading indicator
     }
-
     final discourseArray = segmentDetails!['discourse'] as List<dynamic>;
-
-    // Create TextEditingControllers for Head Index and Relation
-    final headIndexControllers = List.generate(
-      discourseArray.length,
-      (index) {
-        final discourseItem = discourseArray[index];
-        return TextEditingController(
-          text: (discourseItem['relation'] == 'coref')
-              ? discourseItem['head_index']?.toString() ?? ''
-              : '', // Only show if relation is 'coref'
-        );
-      },
-    );
-
+    // Populate selectedDiscourseIndices based on the presence of head_index
     final selectedDiscourseIndices = discourseArray.map((discourseItem) {
-      return discourseItem['relation'] == 'coref' &&
+      return discourseItem['head_index'] != null &&
               discourseItem['head_index'].toString() != '-'
           ? true
           : false;
     }).toList();
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Scrollbar(
-        controller: ScrollController(),
-        thumbVisibility: true, // Keeps the scrollbar visible
-        interactive: true,
+    final ScrollController scrollController = ScrollController();
+
+    return Scrollbar(
+      controller: scrollController,
+      child: SingleChildScrollView(
+        controller: scrollController,
+        scrollDirection: Axis.horizontal,
         child: Column(
           children: [
             ElevatedButton(
@@ -587,19 +573,22 @@ class _CorefTabState extends State<CorefTab> {
               columns: _buildHeaderRow(subSegment, columnCount),
               rows: _buildDataRows(subSegment, columnCount) +
                   [
+                    // Adding a row for checkboxes
                     DataRow(
                       cells: [
                         const DataCell(Text('')),
                         ...List.generate(columnCount, (columnIndex) {
+                          String? relation =
+                              discourseArray[columnIndex]['relation'];
                           return DataCell(Checkbox(
-                            value: selectedDiscourseIndices[columnIndex],
+                            value: relation != 'coref' &&
+                                selectedDiscourseIndices[columnIndex],
                             onChanged: (bool? newValue) {
                               setState(() {
                                 if (newValue != null) {
                                   selectedDiscourseIndices[columnIndex] =
                                       newValue;
                                 }
-
                                 // Find the previously checked checkbox
                                 int prevCheckedIndex = -1;
                                 for (int i = 0;
@@ -611,7 +600,6 @@ class _CorefTabState extends State<CorefTab> {
                                     break;
                                   }
                                 }
-
                                 // Shift the head index and relation values of previously ticked checkbox to the newly checked ticked box
                                 if (prevCheckedIndex != -1) {
                                   String? prevHeadIndex =
@@ -620,17 +608,14 @@ class _CorefTabState extends State<CorefTab> {
                                   String? prevRelation =
                                       discourseArray[prevCheckedIndex]
                                           ['relation'];
-
                                   if (prevHeadIndex != null) {
                                     discourseArray[columnIndex]['head_index'] =
                                         prevHeadIndex;
                                   }
-
                                   if (prevRelation != null) {
                                     discourseArray[columnIndex]['relation'] =
                                         prevRelation;
                                   }
-
                                   // Clear the previously checked box's head index and relation values
                                   discourseArray[prevCheckedIndex]
                                       ['head_index'] = null;
@@ -647,13 +632,22 @@ class _CorefTabState extends State<CorefTab> {
                       cells: [
                         const DataCell(Text('Head Index')),
                         ...List.generate(columnCount, (columnIndex) {
+                          String? relation =
+                              discourseArray[columnIndex]['relation'];
                           return DataCell(TextField(
-                            controller: headIndexControllers[columnIndex],
+                            controller: TextEditingController(
+                              text: relation == 'coref'
+                                  ? '' // Keep the field empty if relation is 'coref'
+                                  : discourseArray[columnIndex]['head_index']
+                                          ?.toString() ??
+                                      '',
+                            ),
                             decoration: const InputDecoration(
                               border: OutlineInputBorder(),
                               isDense: true,
                             ),
                             onChanged: (value) {
+                              // Always allow the field to be edited
                               discourseArray[columnIndex]['head_index'] = value;
                             },
                           ));
@@ -666,17 +660,21 @@ class _CorefTabState extends State<CorefTab> {
                         ...List.generate(columnCount, (columnIndex) {
                           String? currentRelation =
                               discourseArray[columnIndex]['relation'];
-
-                          if (currentRelation != 'coref') {
-                            currentRelation = null;
+                          // Ensure the current value is part of the relationTypes list
+                          if (!relationTypes.contains(currentRelation)) {
+                            currentRelation =
+                                null; // Set to null if it doesn't match
                           }
-
                           return DataCell(
                             SizedBox(
-                              width: 150,
+                              width:
+                                  150, // Set the desired width for the dropdown
                               child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: currentRelation,
+                                isExpanded:
+                                    true, // Ensures the text is not clipped
+                                value: currentRelation == 'coref'
+                                    ? null
+                                    : currentRelation,
                                 hint: const Text(''),
                                 items: relationTypes.map((String relation) {
                                   return DropdownMenuItem<String>(
@@ -699,40 +697,57 @@ class _CorefTabState extends State<CorefTab> {
                   ],
             ),
             Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: DropdownButton<SubSegment>(
-                value: segments
-                        .expand((segment) => segment.subSegments)
-                        .contains(dropdownSelectedSubSegment)
-                    ? dropdownSelectedSubSegment
-                    : null,
-                hint: const Text('Select Connecting Segment'),
-                items: segments
-                    .expand((segment) => segment.subSegments)
-                    .map((SubSegment subSegment) {
-                  return DropdownMenuItem<SubSegment>(
-                    value: subSegment,
-                    child: Text(subSegment.subIndex),
-                  );
-                }).toList(),
-                onChanged: (SubSegment? newValue) async {
-                  setState(() {
-                    dropdownSelectedSubSegment = newValue;
-                    _isConceptSelected = newValue != null;
-                  });
-                  if (newValue != null) {
-                    await _fetchConceptDetails(newValue.segmentId);
-                  }
-                },
-              ),
-            ),
+                padding: const EdgeInsets.all(8.0),
+                child: DropdownButton<SubSegment>(
+                  value: segments
+                          .expand((segment) => segment.subSegments)
+                          .contains(dropdownSelectedSubSegment)
+                      ? dropdownSelectedSubSegment
+                      : null, // Ensure value is either in the list or null
+                  hint: const Text('Select Connecting Segment'),
+                  items: segments
+                      .expand((segment) => segment.subSegments)
+                      .map((SubSegment subSegment) {
+                    return DropdownMenuItem<SubSegment>(
+                      value: subSegment,
+                      child: Text(subSegment.subIndex),
+                    );
+                  }).toList(),
+                  onChanged: (SubSegment? newValue) async {
+                    setState(() {
+                      dropdownSelectedSubSegment = newValue;
+                      _isConceptSelected = newValue != null;
+                    });
+                    if (newValue != null) {
+                      await _fetchConceptDetails(newValue.segmentId);
+                    }
+                  },
+                )),
             if (_isConceptSelected)
               buildConceptTable(dropdownSelectedSubSegment),
+            // Padding(
+            //   padding: const EdgeInsets.all(8.0),
+            //   child: DropdownButton<String>(
+            //     value: selectedRelationType,
+            //     hint: const Text('Select Relation Type'),
+            //     items: relationTypes.map((String relation) {
+            //       return DropdownMenuItem<String>(
+            //         value: relation,
+            //         child: Text(relation),
+            //       );
+            //     }).toList(),
+            //     onChanged: (String? newValue) {
+            //       setState(() {
+            //         selectedRelationType = newValue;
+            //       });
+            //     },
+            //   ),
+            // ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.done, color: Colors.white),
-                label: const Text('Finalize Coref',
+                label: const Text('Finalize Discourse',
                     style: TextStyle(color: Color.fromRGBO(255, 255, 255, 1))),
                 onPressed: () => finalizeDiscourse(context, subSegment),
                 style: ElevatedButton.styleFrom(

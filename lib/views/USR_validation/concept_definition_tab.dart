@@ -1,15 +1,13 @@
 // ignore_for_file: avoid_print
-
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
-import '../models/segment.dart';
-import '../services/auth_service.dart'; // Adjust based on your AuthService implementation
+import 'package:lc_frontend/views/file_download/USR_download_mobile.dart';
+import 'package:lc_frontend/views/file_download/USR_download_web.dart';
+import '../../models/segment.dart';
+import '../../services/auth_service.dart'; // Adjust based on your AuthService implementation
 import 'package:pdfrx/pdfrx.dart';
-import 'package:open_file/open_file.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ConceptTab extends StatefulWidget {
   final int chapterId;
@@ -52,7 +50,7 @@ class _ConceptTabState extends State<ConceptTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -94,7 +92,7 @@ class _ConceptTabState extends State<ConceptTab> {
       return;
     }
 
-    // bool hasData = false;
+    bool hasData = false; // Track if any data is found
 
     for (SubSegment subSegment in selectedSegment!.subSegments) {
       int? segmentId;
@@ -109,7 +107,7 @@ class _ConceptTabState extends State<ConceptTab> {
       }
 
       final conceptUrl = Uri.parse(
-          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
+          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/$segmentId');
       print('Fetching concepts from: $conceptUrl');
 
       try {
@@ -130,6 +128,10 @@ class _ConceptTabState extends State<ConceptTab> {
               .map((conceptJson) => ConceptDefinition.fromJson(conceptJson))
               .toList();
 
+          if (conceptDefinitions.isNotEmpty) {
+            hasData = true; // Set true if any data is found
+          }
+
           if (mounted) {
             setState(() {
               subSegment.conceptDefinitions = conceptDefinitions;
@@ -144,8 +146,14 @@ class _ConceptTabState extends State<ConceptTab> {
         }
       } catch (e) {
         print('Error fetching concepts for segment $segmentId: $e');
-        // Display error message to the user
       }
+    }
+
+    // If no data found, show Snackbar
+    if (!hasData && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No USR found')),
+      );
     }
   }
 
@@ -471,12 +479,12 @@ class _ConceptEditorState extends State<ConceptEditor> {
     'kAryaxyowaka',
   ];
 
-  final List<String> domainTerms = [
-    '-',
-    'geography',
-    'geography physical',
-    'recipe'
-  ];
+  // final List<String> domainTerms = [
+  //   '-',
+  //   'geography',
+  //   'geography physical',
+  //   'recipe'
+  // ];
 
   final List<String> constructionOptions = [
     '[3-waw]',
@@ -541,7 +549,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
     }
 
     final url = Uri.parse(
-        'http://localhost:5000/api/concepts/getconcepts/$originalConceptName');
+        'https://canvas.iiit.ac.in/lc/api/concepts/getconcepts/$originalConceptName');
     print('Fetching concept options from: $url');
 
     final response = await http.get(
@@ -584,7 +592,7 @@ class _ConceptEditorState extends State<ConceptEditor> {
     }
 
     final url =
-        'http://localhost:5000/api/segment_details/segment_details/${widget.subSegment.segmentId}/download';
+        'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/${widget.subSegment.segmentId}/download';
 
     try {
       final response = await http.get(
@@ -595,17 +603,19 @@ class _ConceptEditorState extends State<ConceptEditor> {
       );
 
       if (response.statusCode == 200) {
-        final directory = await getApplicationDocumentsDirectory();
-        final filePath = '${directory.path}/downloaded_usr.txt';
+        const fileName = 'downloaded_usr.txt';
 
-        final file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
-        print('File saved at: $filePath');
+        if (kIsWeb) {
+          // Convert response.bodyBytes to String using UTF-8 encoding
+          final fileContent = utf8.decode(response.bodyBytes);
+          downloadFileWeb(fileName, fileContent);
+        } else {
+          await downloadFileIO(fileName, response.bodyBytes);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Download successful')),
         );
-
-        OpenFile.open(filePath); // Automatically open the downloaded file
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Download failed: ${response.statusCode}')),
@@ -841,7 +851,6 @@ class _ConceptEditorState extends State<ConceptEditor> {
       (index) => {
         'index': TextEditingController(),
         'concept': TextEditingController(),
-        'domainTerm': TextEditingController(),
         'semanticCategory': TextEditingController(),
         'morphologicalSemantics': TextEditingController(),
         'speakersView': TextEditingController(),
@@ -855,6 +864,9 @@ class _ConceptEditorState extends State<ConceptEditor> {
         'CO-ref': TextEditingController(),
       },
     );
+
+    ScrollController verticalScrollController = ScrollController();
+    ScrollController horizontalScrollController = ScrollController();
 
     void showDiscourseRelPopup(int columnIndex) {
       showDialog(
@@ -904,365 +916,370 @@ class _ConceptEditorState extends State<ConceptEditor> {
                   ),
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    controller: verticalScrollController,
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        headingRowHeight: 60.0, // Adjust height as needed
-                        columns: [
-                          const DataColumn(
-                            label: Text('Index',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                          for (int i = 0; i < subSegment.columnCount; i++)
-                            DataColumn(
-                              label: Text('Column ${i + 1}',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                        ],
-                        rows: [
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Index:')),
+                      controller: verticalScrollController,
+                      scrollDirection: Axis.vertical,
+                      child: Scrollbar(
+                        thumbVisibility: true,
+                        controller: horizontalScrollController,
+                        child: SingleChildScrollView(
+                          controller: horizontalScrollController,
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            headingRowHeight: 60.0, // Adjust height as needed
+                            // Updated DataColumn code with three-dot icon and popup menu
+                            columns: [
+                              const DataColumn(
+                                label: Text('Index',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                              ),
                               for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: TextField(
-                                      controller: controllers[i]['index'],
-                                      decoration: InputDecoration(
-                                        labelText: 'index ${i + 1}',
-                                      ),
-                                    ),
-                                  ),
+                                DataColumn(
+                                  label: Text('Column ${i + 1}',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
                                 ),
                             ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Concept:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: Stack(
-                                      children: [
-                                        TextField(
-                                          controller: controllers[i]['concept'],
+
+                            rows: [
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Index:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: TextField(
+                                          controller: controllers[i]['index'],
                                           decoration: InputDecoration(
-                                            labelText: 'Concept ${i + 1}',
+                                            labelText: 'index ${i + 1}',
                                           ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Concept:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: Stack(
+                                          children: [
+                                            TextField(
+                                              controller: controllers[i]
+                                                  ['concept'],
+                                              decoration: InputDecoration(
+                                                labelText: 'Concept ${i + 1}',
+                                              ),
+                                              onChanged: (value) {
+                                                // Trigger fetching of concept options based on the current input
+                                                _fetchConceptOptions(i, value);
+                                              },
+                                            ),
+                                            Positioned(
+                                              right: 0,
+                                              child: PopupMenuButton<String>(
+                                                icon: const Icon(
+                                                    Icons.arrow_drop_down),
+                                                onSelected: (String value) {
+                                                  setState(() {
+                                                    controllers[i]['concept']!
+                                                        .text = value;
+                                                  });
+                                                },
+                                                itemBuilder:
+                                                    (BuildContext context) {
+                                                  return conceptOptions[i]?.map(
+                                                          (String option) {
+                                                        return PopupMenuItem<
+                                                            String>(
+                                                          value: option,
+                                                          child: Text(option),
+                                                        );
+                                                      }).toList() ??
+                                                      [];
+                                                },
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Semantic Category:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: DropdownButtonFormField<String>(
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                'Semantic Category ${i + 1}',
+                                          ),
+                                          items: semanticCategories
+                                              .map((String value) {
+                                            return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                            );
+                                          }).toList(),
                                           onChanged: (value) {
-                                            // Trigger fetching of concept options based on the current input
-                                            _fetchConceptOptions(i, value);
+                                            controllers[i]['semanticCategory']!
+                                                .text = value!;
                                           },
                                         ),
-                                        Positioned(
-                                          right: 0,
-                                          child: PopupMenuButton<String>(
-                                            icon: const Icon(
-                                                Icons.arrow_drop_down),
-                                            onSelected: (String value) {
-                                              setState(() {
-                                                controllers[i]['concept']!
-                                                    .text = value;
-                                              });
-                                            },
-                                            itemBuilder:
-                                                (BuildContext context) {
-                                              return conceptOptions[i]
-                                                      ?.map((String option) {
-                                                    return PopupMenuItem<
-                                                        String>(
-                                                      value: option,
-                                                      child: Text(option),
-                                                    );
-                                                  }).toList() ??
-                                                  [];
-                                            },
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Morpho Semantics:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: DropdownButtonFormField<String>(
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                'Morpho Semantics ${i + 1}',
+                                          ),
+                                          items: morphologicalSemantics
+                                              .map((String value) {
+                                            return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                            );
+                                          }).toList(),
+                                          onChanged: (value) {
+                                            controllers[i]
+                                                    ['morphologicalSemantics']!
+                                                .text = value!;
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Speakers View:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: DropdownButtonFormField<String>(
+                                          decoration: InputDecoration(
+                                            labelText: 'Speakers View ${i + 1}',
+                                          ),
+                                          items:
+                                              speakersViews.map((String value) {
+                                            return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                            );
+                                          }).toList(),
+                                          onChanged: (value) {
+                                            controllers[i]['speakersView']!
+                                                .text = value!;
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('CxN head')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: TextField(
+                                          controller: controllers[i]
+                                              ['CxN head'],
+                                          decoration: InputDecoration(
+                                            labelText: 'CxN head ${i + 1}',
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Domain Term:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: DropdownButtonFormField<String>(
-                                      decoration: InputDecoration(
-                                        labelText: 'Domain Term ${i + 1}',
-                                      ),
-                                      items: domainTerms.map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) {
-                                        controllers[i]['domainTerm']!.text =
-                                            value!;
-                                      },
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Semantic Category:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: DropdownButtonFormField<String>(
-                                      decoration: InputDecoration(
-                                        labelText: 'Semantic Category ${i + 1}',
-                                      ),
-                                      items: semanticCategories
-                                          .map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) {
-                                        controllers[i]['semanticCategory']!
-                                            .text = value!;
-                                      },
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Morpho Semantics:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: DropdownButtonFormField<String>(
-                                      decoration: InputDecoration(
-                                        labelText: 'Morpho Semantics ${i + 1}',
-                                      ),
-                                      items: morphologicalSemantics
-                                          .map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) {
-                                        controllers[i]
-                                                ['morphologicalSemantics']!
-                                            .text = value!;
-                                      },
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Speakers View:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: DropdownButtonFormField<String>(
-                                      decoration: InputDecoration(
-                                        labelText: 'Speakers View ${i + 1}',
-                                      ),
-                                      items: speakersViews.map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) {
-                                        controllers[i]['speakersView']!.text =
-                                            value!;
-                                      },
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('CxN head')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: TextField(
-                                      controller: controllers[i]['CxN head'],
-                                      decoration: InputDecoration(
-                                        labelText: 'CxN head ${i + 1}',
                                       ),
                                     ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Component Type:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: DropdownButtonFormField<String>(
-                                      decoration: InputDecoration(
-                                        labelText: 'Component Type ${i + 1}',
-                                      ),
-                                      items: componentTypes.map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) {
-                                        controllers[i]['Component Type']!.text =
-                                            value!;
-                                      },
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Is Main:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: TextField(
-                                      controller: controllers[i]['Is Main'],
-                                      decoration: InputDecoration(
-                                        labelText: 'Is Main ${i + 1}',
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Component Type:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: DropdownButtonFormField<String>(
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                'Component Type ${i + 1}',
+                                          ),
+                                          items: componentTypes
+                                              .map((String value) {
+                                            return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                            );
+                                          }).toList(),
+                                          onChanged: (value) {
+                                            controllers[i]['Component Type']!
+                                                .text = value!;
+                                          },
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Head Index:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: TextField(
-                                      controller: controllers[i]['Head Index'],
-                                      decoration: InputDecoration(
-                                        labelText: 'Head Index ${i + 1}',
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Head Index:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: TextField(
+                                          controller: controllers[i]
+                                              ['Head Index'],
+                                          decoration: InputDecoration(
+                                            labelText: 'Head Index ${i + 1}',
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Dep Rel:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: DropdownButtonFormField<String>(
-                                      decoration: InputDecoration(
-                                        labelText: 'Dep Rel ${i + 1}',
-                                      ),
-                                      items: relationTypes.map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) {
-                                        controllers[i]['Dep Rel']!.text =
-                                            value!;
-                                      },
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Discourse Head Index:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: TextField(
-                                      controller: controllers[i]
-                                          ['Discourse head index'],
-                                      decoration: InputDecoration(
-                                        labelText:
-                                            'Discourse head index ${i + 1}',
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Is Main:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: TextField(
+                                          controller: controllers[i]['Is Main'],
+                                          decoration: InputDecoration(
+                                            labelText: 'Is Main ${i + 1}',
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('Discourse Rel:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        showDiscourseRelPopup(i);
-                                      },
-                                      child: AbsorbPointer(
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Dep Rel:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: TextField(
+                                          controller: controllers[i]['Dep Rel'],
+                                          decoration: InputDecoration(
+                                            labelText: 'Dep Rel ${i + 1}',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Discourse Head Index:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: TextField(
+                                          controller: controllers[i]
+                                              ['Discourse Head Index'],
+                                          decoration: InputDecoration(
+                                            labelText:
+                                                'Discourse Head Index ${i + 1}',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('Discourse Rel:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
                                         child: TextField(
                                           controller: controllers[i]
                                               ['Discourse Rel'],
                                           decoration: InputDecoration(
                                             labelText: 'Discourse Rel ${i + 1}',
                                           ),
+                                          onTap: () => showDiscourseRelPopup(i),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: [
-                              const DataCell(Text('CO-ref:')),
-                              for (int i = 0; i < subSegment.columnCount; i++)
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.0,
-                                    child: TextField(
-                                      controller: controllers[i]['Co-ref'],
-                                      decoration: InputDecoration(
-                                        labelText: 'CO-ref ${i + 1}',
+                                ],
+                              ),
+                              DataRow(
+                                cells: [
+                                  const DataCell(Text('CO-ref:')),
+                                  for (int i = 0;
+                                      i < subSegment.columnCount;
+                                      i++)
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.0,
+                                        child: TextField(
+                                          controller: controllers[i]['CO-ref'],
+                                          decoration: InputDecoration(
+                                            labelText: 'CO-ref ${i + 1}',
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
+                                ],
+                              ),
                             ],
                           ),
-                          // Add other rows here similarly
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -1274,6 +1291,9 @@ class _ConceptEditorState extends State<ConceptEditor> {
             TextButton(
               child: const Text("Cancel"),
               onPressed: () {
+                // Dispose controllers here if necessary
+                verticalScrollController.dispose();
+                horizontalScrollController.dispose();
                 Navigator.of(context).pop();
               },
             ),
@@ -1281,6 +1301,9 @@ class _ConceptEditorState extends State<ConceptEditor> {
               child: const Text("Submit"),
               onPressed: () {
                 _submitData(subSegment, controllers);
+                // Dispose controllers here if necessary
+                verticalScrollController.dispose();
+                horizontalScrollController.dispose();
                 Navigator.of(context).pop(); // Close the dialog
                 setState(() {});
               },
@@ -1342,8 +1365,8 @@ class _ConceptEditorState extends State<ConceptEditor> {
           {
             "segment_index": subSegment.subIndex,
             "index": i + 1,
-            "component_type": controllers[i]['Component Type']!.text,
-            "main_index": controllers[i]['Head Index']!.text,
+            "head_relation": controllers[i]['Component Type']!.text,
+            "head_index": controllers[i]['Head Index']!.text,
             "relation": controllers[i]['Dep Rel']!.text,
             "is_main": controllers[i]['Is Main']!.text.toLowerCase() == 'true'
           }
@@ -1369,13 +1392,13 @@ class _ConceptEditorState extends State<ConceptEditor> {
                 '${controllers[i]['Discourse Head Index']!.text}: ${controllers[i]['Discourse Rel']!.text}', // Formatting value
           }
         ],
-        "domain_term": [
-          {
-            "segment_index": subSegment.subIndex,
-            "index": i + 1,
-            "domain_term": controllers[i]['domainTerm']!.text
-          }
-        ]
+        // "domain_term": [
+        //   {
+        //     "segment_index": subSegment.subIndex,
+        //     "index": i + 1,
+        //     "domain_term": controllers[i]['domainTerm']!.text
+        //   }
+        // ]
       };
       lexicoConceptual.add(conceptEntry);
     }
@@ -1390,7 +1413,8 @@ class _ConceptEditorState extends State<ConceptEditor> {
 
     print('Request body: ${jsonEncode(requestBody)}');
     final response = await http.post(
-      Uri.parse('http://localhost:5000/api/segment_details/segment_details'),
+      Uri.parse(
+          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -1554,18 +1578,22 @@ class _ConceptEditorState extends State<ConceptEditor> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Select Construction Option'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: constructionOptions.map((option) {
-              return ListTile(
-                title: Text(option),
-                onTap: () {
-                  // Update concept with selected construction option
-                  updateConceptProperty(columnIndex, 'Concept', option);
-                  Navigator.of(context).pop(); // Close the dialog
-                },
-              );
-            }).toList(),
+          content: SingleChildScrollView(
+            child: Scrollbar(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: constructionOptions.map((option) {
+                  return ListTile(
+                    title: Text(option),
+                    onTap: () {
+                      // Update concept with selected construction option
+                      updateConceptProperty(columnIndex, 'Concept', option);
+                      Navigator.of(context).pop(); // Close the dialog
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
           ),
         );
       },
@@ -1668,8 +1696,8 @@ class _ConceptEditorState extends State<ConceptEditor> {
     final mainSegment = widget.segment.mainSegment;
     final subSegment = widget.subSegment;
     final segmentId = subSegment.segmentId;
-    final url =
-        Uri.parse('http://localhost:5000/api/lexicals/segment/$segmentId');
+    final url = Uri.parse(
+        'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId');
     final body = jsonEncode(widget.subSegment.conceptDefinitions.map((concept) {
       return {
         "segment_index": mainSegment, // Assuming you have this field

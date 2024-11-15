@@ -3,8 +3,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:lc_frontend/views/concept_definition_tab.dart';
-import '../models/segment.dart';
+import 'package:lc_frontend/views/USR_validation/concept_definition_tab.dart';
+import '../../models/segment.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdfrx/pdfrx.dart';
 
@@ -41,7 +41,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments');
       final response = await http.get(
         url,
         headers: {
@@ -228,7 +228,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/lexicals/segment/$segmentId/is_concept_generated');
+          'https://canvas.iiit.ac.in/lc/api/lexicals/segment/$segmentId/is_concept_generated');
       final response = await http.get(
         url,
         headers: {
@@ -266,7 +266,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       }
 
       final url = Uri.parse(
-          'http://localhost:5000/api/segment_details/segment_details/$segmentId');
+          'https://canvas.iiit.ac.in/lc/api/segment_details/segment_details/$segmentId');
       final response = await http.get(
         url,
         headers: {
@@ -298,8 +298,11 @@ class _ConstructionTabState extends State<ConstructionTab> {
 
         final constructionArray = jsonResponse['construction'] as List<dynamic>;
         for (var constructionItem in constructionArray) {
-          final cxnIndex = constructionItem['cxn_index'];
-          final componentType = constructionItem['component_type'];
+          final cxnIndex =
+              constructionItem['cxn_index'] ?? '-'; // Use a reasonable default
+          final componentType =
+              constructionItem['component_type'] ?? '-'; // Same here
+
           print('cxn_index: $cxnIndex, component_type: $componentType');
           // ... Use cxnIndex and componentType here ...
         }
@@ -380,7 +383,7 @@ class _ConstructionTabState extends State<ConstructionTab> {
       print(payload);
 
       final url = Uri.parse(
-          'http://localhost:5000/api/constructions/segment/${subSegment.segmentId}/construction');
+          'https://canvas.iiit.ac.in/lc/api/constructions/segment/${subSegment.segmentId}/construction');
       final response = await http.put(
         url,
         headers: {

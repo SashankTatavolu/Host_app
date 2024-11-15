@@ -1,8 +1,9 @@
-// ignore_for_file: library_private_types_in_public_api
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/segment.dart';
+import '../services/auth_service.dart'; // Import your AuthService
 
 class SegmentEditor extends StatefulWidget {
   final Segment segment;
@@ -21,6 +22,93 @@ class SegmentEditor extends StatefulWidget {
 class _SegmentEditorState extends State<SegmentEditor> {
   bool isEditing = false;
 
+  Future<String?> getJwtToken() async {
+    try {
+      final authService =
+          AuthService(); // Adjust based on your AuthService implementation
+      final token = await authService.getToken();
+
+      if (token == null) {
+        print("Failed to obtain JWT token.");
+        return null;
+      }
+      print('JWT Token: $token');
+      return token;
+    } catch (e) {
+      print('Error fetching JWT token: $e');
+      return null;
+    }
+  }
+
+  // API call to save edited segment
+  Future<void> saveEditedSegment() async {
+    final jwtToken = await getJwtToken();
+    if (jwtToken == null) return;
+
+    final url = Uri.parse(
+        'https://canvas.iiit.ac.in/lc/api/segments/sentence/${widget.segment.mainSegment}');
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $jwtToken',
+    };
+
+    // Create a list of subsegment JSON objects
+    final List<Map<String, dynamic>> subSegmentList =
+        widget.segment.subSegments.map((subSegment) {
+      return {
+        "segment_index": subSegment.subIndex,
+        "segment_text": subSegment.text,
+        "segment_type": "type", // Use actual segment type
+        "index_type": "type", // Use actual index type
+      };
+    }).toList();
+
+    final body = jsonEncode(subSegmentList);
+
+    print(body);
+
+    try {
+      final response = await http.put(url, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        print('Segment saved successfully');
+      } else {
+        print('Failed to save segment: ${response.body}');
+      }
+    } catch (e) {
+      print('Error saving segment: $e');
+    }
+  }
+
+  // API call to delete a segment
+  Future<void> deleteSegment(int segmentId) async {
+    try {
+      // Get JWT token
+      String? jwtToken = await getJwtToken();
+      if (jwtToken == null) {
+        throw Exception('JWT token not found');
+      }
+
+      // Make DELETE request
+      final url =
+          Uri.parse('https://canvas.iiit.ac.in/lc/api/segments/$segmentId');
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $jwtToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 204) {
+        print('Segment deleted successfully');
+      } else {
+        print('Failed to delete segment: ${response.body}');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
   void _addSubSegment() {
     showDialog(
         context: context,
@@ -34,16 +122,12 @@ class _SegmentEditorState extends State<SegmentEditor> {
                     onPressed: () => Navigator.pop(context, 'Title'),
                     child: const Text('Title'),
                   ),
-                  const SizedBox(
-                    height: 20,
-                  ),
+                  const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context, 'Header'),
                     child: const Text('Header'),
                   ),
-                  const SizedBox(
-                    height: 20,
-                  ),
+                  const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context, 'Normal'),
                     child: const Text('Normal'),
@@ -57,18 +141,16 @@ class _SegmentEditorState extends State<SegmentEditor> {
         String newSubIndex = getNextSubSegmentIndex(selectedType);
         setState(() {
           SubSegment newSubSegment = SubSegment(
-              text: "New $selectedType Sub-segment",
-              subIndex: newSubIndex,
-              indexType: selectedType,
-              // segmentId: int.parse('segmentId'),
-              columnCount: 0,
-              dependencyRelations: []);
+            text: "New $selectedType Sub-segment",
+            subIndex: newSubIndex,
+            indexType: selectedType,
+            columnCount: 0,
+            dependencyRelations: [],
+          );
           if (selectedType == 'Title' || selectedType == 'Header') {
-            widget.segment.subSegments
-                .insert(0, newSubSegment); // Insert at top for Title and Header
+            widget.segment.subSegments.insert(0, newSubSegment);
           } else {
-            widget.segment.subSegments
-                .add(newSubSegment); // Append at bottom for Normal
+            widget.segment.subSegments.add(newSubSegment);
           }
           widget.onSubSegmentChanged(widget.segment.subSegments);
         });
@@ -77,11 +159,9 @@ class _SegmentEditorState extends State<SegmentEditor> {
   }
 
   String getNextSubSegmentIndex(String type) {
-    // Generate next index based on type and existing entries
     if (type == 'Title' || type == 'Header') {
       return "${widget.segment.mainSegment}$type";
     } else {
-      // Calculate next alphabet character for sub-segment
       int lastIndex = 0;
       for (var subSegment in widget.segment.subSegments) {
         if (subSegment.indexType == 'Normal') {
@@ -106,7 +186,12 @@ class _SegmentEditorState extends State<SegmentEditor> {
                 Text('${widget.segment.mainSegment}. ${widget.segment.text}'),
             trailing: IconButton(
               icon: Icon(isEditing ? Icons.check : Icons.edit),
-              onPressed: () => setState(() => isEditing = !isEditing),
+              onPressed: () async {
+                if (isEditing) {
+                  await saveEditedSegment();
+                }
+                setState(() => isEditing = !isEditing);
+              },
             ),
           ),
           if (isEditing) ...[
@@ -122,7 +207,10 @@ class _SegmentEditorState extends State<SegmentEditor> {
                 subtitle: Text(widget.segment.subSegments[i].subIndex),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete),
-                  onPressed: () {
+                  onPressed: () async {
+                    final segmentId = widget.segment.subSegments[i]
+                        .segmentId; // Assuming subIndex is the segmentId
+                    await deleteSegment((segmentId));
                     setState(() {
                       widget.segment.subSegments.removeAt(i);
                       widget.onSubSegmentChanged(widget.segment.subSegments);
@@ -139,8 +227,7 @@ class _SegmentEditorState extends State<SegmentEditor> {
           ] else ...[
             for (var subSegment in widget.segment.subSegments)
               ListTile(
-                title: Text(
-                    '${subSegment.subIndex} : ${subSegment.text} (${subSegment.indexType})'),
+                title: Text('${subSegment.subIndex} : ${subSegment.text}'),
               ),
           ],
         ],

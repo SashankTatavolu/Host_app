@@ -9,21 +9,22 @@ import 'package:file_picker/file_picker.dart';
 import 'package:lc_frontend/services/auth_service.dart';
 import 'package:lc_frontend/widgets/custom_app_bar.dart';
 import 'package:lc_frontend/widgets/navigation_bar.dart';
-import '../widgets/chapter_list.dart';
+import '../../widgets/chapter_list.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 
-class ProjectPage extends StatefulWidget {
+class ChaptersPage extends StatefulWidget {
   final int projectId;
+
   final VoidCallback onChapterAdded;
 
-  const ProjectPage(
+  const ChaptersPage(
       {super.key, required this.projectId, required this.onChapterAdded});
 
   @override
-  State<ProjectPage> createState() => _ProjectPageState();
+  State<ChaptersPage> createState() => _ChaptersPageState();
 }
 
-class _ProjectPageState extends State<ProjectPage> {
+class _ChaptersPageState extends State<ChaptersPage> {
   List<Chapter> chapters = [];
   List<Map<String, dynamic>> users = []; // To store users
   String? selectedUser; // To store the selected user ID
@@ -49,7 +50,7 @@ class _ProjectPageState extends State<ProjectPage> {
 
     final response = await http.get(
       Uri.parse(
-          'http://localhost:5000/api/chapters/by_project/${widget.projectId}'),
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_project/${widget.projectId}'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -84,17 +85,17 @@ class _ProjectPageState extends State<ProjectPage> {
 
     final response = await http.get(
       Uri.parse(
-          'http://localhost:5000/api/users/by_organization/$userOrganization'),
+          'https://canvas.iiit.ac.in/lc/api/users/by_organization/$userOrganization'),
       headers: {
         'Authorization': 'Bearer $token',
       },
     );
-
     if (response.statusCode == 200) {
       final List<dynamic> usersJson = jsonDecode(response.body);
       setState(() {
         users = usersJson.cast<Map<String, dynamic>>();
       });
+      print('Users fetched: ${users.length}');
     } else {
       print('Failed to load users: ${response.statusCode}');
     }
@@ -138,7 +139,7 @@ class _ProjectPageState extends State<ProjectPage> {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/chapters/add'),
+        Uri.parse('https://canvas.iiit.ac.in/lc/api/chapters/add'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -186,7 +187,7 @@ class _ProjectPageState extends State<ProjectPage> {
       print('Username from JWT: $username'); // Print username from JWT
 
       final response = await http.get(
-        Uri.parse('http://localhost:5000/api/users/all'),
+        Uri.parse('https://canvas.iiit.ac.in/lc/api/users/all'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $jwtToken',
@@ -241,7 +242,8 @@ class _ProjectPageState extends State<ProjectPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/projects/$projectId/assign_users'),
+        Uri.parse(
+            'https://canvas.iiit.ac.in/lc/api/projects/$projectId/assign_users'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

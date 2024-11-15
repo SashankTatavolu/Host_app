@@ -4,18 +4,18 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import '../services/auth_service.dart';
+import '../../services/auth_service.dart';
 
-class ChapterTab extends StatefulWidget {
+class ChapterTextTab extends StatefulWidget {
   final int chapterId;
 
-  const ChapterTab({super.key, required this.chapterId});
+  const ChapterTextTab({super.key, required this.chapterId});
 
   @override
-  _ChapterTabState createState() => _ChapterTabState();
+  _ChapterTextTabState createState() => _ChapterTextTabState();
 }
 
-class _ChapterTabState extends State<ChapterTab> {
+class _ChapterTextTabState extends State<ChapterTextTab> {
   Future<String>? chapterContent;
   List<String> pages = [];
   int currentPageIndex = 0;
@@ -99,7 +99,7 @@ class _ChapterTabState extends State<ChapterTab> {
   Future<String> fetchChapterContent(int chapterId) async {
     print('Fetching chapter content for chapter ID: $chapterId');
     String baseUrl =
-        'http://localhost:5000/api/chapters/by_chapter/$chapterId/text';
+        'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/$chapterId/text';
     final String? jwtToken = await getJwtToken();
 
     if (jwtToken == null) {

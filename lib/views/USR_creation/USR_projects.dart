@@ -2,23 +2,23 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:lc_frontend/widgets/navigation_bar.dart';
-import '../widgets/custom_app_bar.dart';
-import '../widgets/project_info_card_section.dart';
-import '../widgets/stats_section.dart';
-import 'project_page.dart';
+import 'package:lc_frontend/views/USR_creation/USR_chapters.dart';
+import 'package:lc_frontend/views/USR_creation/USR_navigationbar.dart';
+import 'package:lc_frontend/widgets/custom_app_bar.dart';
+import 'package:lc_frontend/widgets/project_info_card_section.dart';
+import 'package:lc_frontend/widgets/stats_section.dart';
 import 'package:http/http.dart' as http;
-import '../services/auth_service.dart';
+import 'package:lc_frontend/services/auth_service.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class USRProjectsPage extends StatefulWidget {
+  const USRProjectsPage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<USRProjectsPage> createState() => _USRProjectsPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _USRProjectsPageState extends State<USRProjectsPage> {
   List<Map<String, dynamic>> projects = [];
   bool isLoading = true;
   String errorMessage = '';
@@ -32,7 +32,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchProjects() async {
-    const url = 'http://localhost:5000/api/projects/all';
+    const url = 'https://canvas.iiit.ac.in/lc/api/projects/all';
     final authService = AuthService();
     final jwtToken = await authService.getToken();
 
@@ -97,7 +97,7 @@ class _HomePageState extends State<HomePage> {
       print('Username from JWT: $username'); // Print username from JWT
 
       final response = await http.get(
-        Uri.parse('http://localhost:5000/api/users/all'),
+        Uri.parse('https://canvas.iiit.ac.in/lc/api/users/all'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $jwtToken',
@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> addProject(
       String projectName, String description, String language) async {
-    const url = 'http://localhost:5000/api/projects/add';
+    const url = 'https://canvas.iiit.ac.in/lc/api/projects/add';
     final authService = AuthService();
     final jwtToken = await authService.getToken();
 
@@ -189,7 +189,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.blueGrey.shade50,
       appBar: const CustomAppBar(),
-      drawer: const NavigationMenu(),
+      drawer: const USRNavigationMenu(),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage.isNotEmpty
@@ -361,7 +361,7 @@ class _HomePageState extends State<HomePage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => ProjectPage(
+                builder: (context) => USRChaptersPage(
                       projectId: project['id'],
                       onChapterAdded: _handleChapterAdded,
                     )),

@@ -179,7 +179,7 @@ class DependencyRelation {
   int targetIndex;
   String relationType;
   bool isMain;
-  String mainIndex;
+  String headIndex;
   final int relationalId; // Add this field if needed
   final int conceptId;
   String relation;
@@ -192,7 +192,7 @@ class DependencyRelation {
       this.isMain = false,
       required this.relationalId,
       required this.conceptId,
-      this.mainIndex = "",
+      this.headIndex = "",
       this.relation = ""});
 
   factory DependencyRelation.fromJson(Map<String, dynamic> json) {
@@ -201,7 +201,7 @@ class DependencyRelation {
         relationType: json['relation_type'] ?? 'None',
         isMain: json['is_main'] ?? false,
         index: json['index'],
-        mainIndex: json['main_index'],
+        headIndex: json['head_index'],
         relation: json['relation'],
         relationalId: json['relational_id'],
         conceptId: json['concept_id']);
@@ -300,7 +300,7 @@ class DependencyRelation {
 
   @override
   String toString() {
-    return 'DependencyRelation(index: $index, targetIndex: $targetIndex, relationType: $relationType, isMain: $isMain, mainIndex: $mainIndex, relation : $relation)';
+    return 'DependencyRelation(index: $index, targetIndex: $targetIndex, relationType: $relationType, isMain: $isMain, headIndex: $headIndex, relation : $relation)';
   }
 }
 

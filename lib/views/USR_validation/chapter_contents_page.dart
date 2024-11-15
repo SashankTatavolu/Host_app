@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:lc_frontend/views/construction_tab.dart';
-import 'package:lc_frontend/views/discourse_definition.dart';
-import 'package:lc_frontend/views/domain_term.dart';
-import 'package:lc_frontend/views/segment_tab.dart';
-import 'package:lc_frontend/views/concept_definition_tab.dart';
+import 'package:lc_frontend/views/USR_validation/construction_tab.dart';
+import 'package:lc_frontend/views/USR_validation/discourse_definition.dart';
+// import 'package:lc_frontend/views/USR_validation/domain_term.dart';
+import 'package:lc_frontend/views/USR_validation/segment_tab.dart';
+import 'package:lc_frontend/views/USR_validation/concept_definition_tab.dart';
 import 'package:lc_frontend/widgets/custom_app_bar.dart';
-import 'package:lc_frontend/views/coref_page.dart';
+import 'package:lc_frontend/views/USR_validation/coref_page.dart';
 
-import '../models/segment.dart';
-import '../widgets/navigation_bar.dart';
-import 'chapter_tab.dart';
+import '../../models/segment.dart';
+import '../../widgets/navigation_bar.dart';
+import 'chapter_text_tab.dart';
 
 import 'dependency_relation_tab.dart';
 
-class ChapterPage extends StatefulWidget {
+class ChapterContentsPage extends StatefulWidget {
   final int chapterId;
-  const ChapterPage({super.key, required this.chapterId});
+  const ChapterContentsPage({super.key, required this.chapterId});
 
   @override
-  _ChapterPageState createState() => _ChapterPageState();
+  _ChapterContentsPageState createState() => _ChapterContentsPageState();
 }
 
-class _ChapterPageState extends State<ChapterPage>
+class _ChapterContentsPageState extends State<ChapterContentsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -201,20 +201,6 @@ class _ChapterPageState extends State<ChapterPage>
               isMain: false,
               conceptId: 0,
               relationalId: 0),
-          DependencyRelation(
-              index: 2,
-              targetIndex: 2,
-              relationType: 'k1s',
-              isMain: false,
-              conceptId: 0,
-              relationalId: 0),
-          DependencyRelation(
-              index: 3,
-              targetIndex: 0,
-              relationType: 'main',
-              isMain: true,
-              conceptId: 0,
-              relationalId: 0)
         ],
         segmentId: 1,
       ),
@@ -242,20 +228,6 @@ class _ChapterPageState extends State<ChapterPage>
               isMain: false,
               conceptId: 0,
               relationalId: 0),
-          DependencyRelation(
-              index: 2,
-              targetIndex: 2,
-              relationType: 'k1s',
-              isMain: false,
-              conceptId: 0,
-              relationalId: 0),
-          DependencyRelation(
-              index: 3,
-              targetIndex: 0,
-              relationType: 'main',
-              isMain: true,
-              conceptId: 0,
-              relationalId: 0)
         ],
         segmentId: 1,
       ),
@@ -283,20 +255,6 @@ class _ChapterPageState extends State<ChapterPage>
               isMain: false,
               conceptId: 0,
               relationalId: 0),
-          DependencyRelation(
-              index: 2,
-              targetIndex: 2,
-              relationType: 'k1s',
-              isMain: false,
-              conceptId: 0,
-              relationalId: 0),
-          DependencyRelation(
-              index: 3,
-              targetIndex: 0,
-              relationType: 'main',
-              isMain: true,
-              conceptId: 0,
-              relationalId: 0)
         ],
         segmentId: 1,
       ),
@@ -324,20 +282,6 @@ class _ChapterPageState extends State<ChapterPage>
               isMain: false,
               conceptId: 0,
               relationalId: 0),
-          DependencyRelation(
-              index: 2,
-              targetIndex: 2,
-              relationType: 'k1s',
-              isMain: false,
-              conceptId: 0,
-              relationalId: 0),
-          DependencyRelation(
-              index: 3,
-              targetIndex: 0,
-              relationType: 'main',
-              isMain: true,
-              conceptId: 0,
-              relationalId: 0)
         ],
         segmentId: 1,
       ),
@@ -347,7 +291,7 @@ class _ChapterPageState extends State<ChapterPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 8, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
   }
 
   @override
@@ -378,7 +322,7 @@ class _ChapterPageState extends State<ChapterPage>
                   Tab(text: 'Chapter'),
                   Tab(text: 'Segment'),
                   Tab(text: 'Lexico Conceptual'),
-                  Tab(text: 'Domain Term'),
+                  // Tab(text: 'Domain Term'),
                   Tab(text: 'Construction'),
                   Tab(text: 'Relational'),
                   Tab(text: 'Discourse'),
@@ -390,7 +334,7 @@ class _ChapterPageState extends State<ChapterPage>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  ChapterTab(chapterId: widget.chapterId),
+                  ChapterTextTab(chapterId: widget.chapterId),
                   SegmentTab(
                     chapterId: widget.chapterId,
                   ),
@@ -398,9 +342,9 @@ class _ChapterPageState extends State<ChapterPage>
                     segments: segments,
                     chapterId: widget.chapterId,
                   ),
-                  DomainTermTab(
-                    chapterId: widget.chapterId,
-                  ),
+                  // DomainTermTab(
+                  //   chapterId: widget.chapterId,
+                  // ),
                   ConstructionTab(
                     chapterId: widget.chapterId.toString(),
                     // segments: segments,

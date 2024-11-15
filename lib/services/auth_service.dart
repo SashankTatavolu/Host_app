@@ -38,7 +38,7 @@ import '../models/login_request.dart';
 import '../models/login_response.dart';
 
 class AuthService {
-  ApiService apiService = ApiService('http://localhost:5000/api/users');
+  ApiService apiService = ApiService('https://canvas.iiit.ac.in/lc/api/users');
   final storage = const FlutterSecureStorage();
 
   Future<void> setToken(String token) async {

@@ -2,17 +2,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lc_frontend/views/USR_validation/projects_page.dart';
+import 'package:lc_frontend/views/USR_creation/USR_projects.dart';
 import 'package:lc_frontend/views/USR_validation/home_page.dart';
 
-class NavigationMenu extends StatefulWidget {
-  const NavigationMenu({super.key});
+class USRNavigationMenu extends StatefulWidget {
+  const USRNavigationMenu({super.key});
 
   @override
-  State<NavigationMenu> createState() => _NavigationMenuState();
+  State<USRNavigationMenu> createState() => _USRNavigationMenuState();
 }
 
-class _NavigationMenuState extends State<NavigationMenu> {
+class _USRNavigationMenuState extends State<USRNavigationMenu> {
   String _username = 'Loading...';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
@@ -69,7 +69,8 @@ class _NavigationMenuState extends State<NavigationMenu> {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const ProjectsPage()),
+                MaterialPageRoute(
+                    builder: (context) => const USRProjectsPage()),
               );
             },
           ),

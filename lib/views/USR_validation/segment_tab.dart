@@ -2,10 +2,10 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../models/segment.dart';
+import '../../models/segment.dart';
 import 'package:http/http.dart' as http;
 
-import '../services/auth_service.dart';
+import '../../services/auth_service.dart';
 // import '../widgets/segment_editor.dart';
 import 'package:pdfrx/pdfrx.dart';
 
@@ -36,7 +36,7 @@ class _SegmentTabState extends State<SegmentTab> {
 
     final response = await http.get(
       Uri.parse(
-          'http://localhost:5000/api/chapters/by_chapter/${widget.chapterId}/sentences_segments'),
+          'https://canvas.iiit.ac.in/lc/api/chapters/by_chapter/${widget.chapterId}/sentences_segments'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
